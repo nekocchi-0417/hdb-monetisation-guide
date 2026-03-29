@@ -960,7 +960,7 @@
             )}
 
             {/* Scheme overview (during questions) */}
-            {!isResult && !isTerminal && node && node.type !== "calculator" && (
+            {!isResult && !isTerminal && node && node.type !== "calculator" && node.type !== "retirementCalc" && (
               <div style={{ marginTop: 28 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 10 }}>The 4 Options at a Glance</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
