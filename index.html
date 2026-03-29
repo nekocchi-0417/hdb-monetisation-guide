@@ -350,6 +350,228 @@
         );
       }
 
+      // ── Retirement income calculator ─────────────────────────────────────
+      function RetirementCalculator({ monthlySpend, onContinue }) {
+        const spend = parseFloat(monthlySpend) || 0;
+
+        // Regular income
+        const [cpfLife,   setCpfLife]   = useState("");
+        const [workInc,   setWorkInc]   = useState("");
+        const [familyAlw, setFamilyAlw] = useState("");
+        const [rentalInc, setRentalInc] = useState("");
+        const [otherInc,  setOtherInc]  = useState("");
+
+        // Investments
+        const [showInvest, setShowInvest] = useState(false);
+        const [portfolio,  setPortfolio]  = useState("");
+        const [annualROI,  setAnnualROI]  = useState("6");
+
+        // Savings
+        const [showSavings,   setShowSavings]   = useState(false);
+        const [savingsAmt,    setSavingsAmt]    = useState("");
+        const [drawdownYears, setDrawdownYears] = useState("25");
+
+        const n = (v) => parseFloat(v) || 0;
+
+        const regularTotal = n(cpfLife) + n(workInc) + n(familyAlw) + n(rentalInc) + n(otherInc);
+
+        const pv  = n(portfolio);
+        const roi = Math.max(0, Math.min(n(annualROI), 30));
+        const monthlyFromReturns = pv > 0 ? Math.round(pv * roi / 100 / 12) : 0;
+        const swrMonthly         = pv > 0 ? Math.round(pv * 0.04 / 12)      : 0;
+
+        const sv    = n(savingsAmt);
+        const yrs   = Math.max(1, n(drawdownYears) || 25);
+        const monthlyFromSavings = sv > 0 ? Math.round(sv / (yrs * 12)) : 0;
+
+        const totalIncome = regularTotal + monthlyFromReturns + monthlyFromSavings;
+        const gap         = spend - totalIncome;   // positive = shortfall
+        const hasSurplus  = gap <= 0;
+
+        const anyFilled = totalIncome > 0 || spend > 0;
+
+        const inRow = (label, val, color) => val > 0 ? (
+          <div style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:"1px solid #ebebeb", fontSize:13 }}>
+            <span style={{ color:"#555" }}>{label}</span>
+            <span style={{ fontWeight:600, color: color || "#1a6e3c" }}>+{fmt(val)}</span>
+          </div>
+        ) : null;
+
+        const inputField = (label, val, setter, placeholder, hint) => (
+          <div>
+            <label style={{ display:"block", fontSize:12.5, fontWeight:600, color:"#444", marginBottom:4 }}>{label}</label>
+            <input type="number" value={val} onChange={e => setter(e.target.value)} placeholder={placeholder}
+              style={{ padding:"9px 12px", fontSize:14 }} />
+            {hint && <div style={{ fontSize:11, color:"#aaa", marginTop:3 }}>{hint}</div>}
+          </div>
+        );
+
+        return (
+          <div>
+            <div style={{ fontSize:17, fontWeight:700, color:"#1a1a1a", marginBottom:4 }}>
+              Retirement Income Assessment
+            </div>
+            <div style={{ fontSize:13, color:"#666", marginBottom:20, lineHeight:1.5 }}>
+              Fill in your current or expected income sources. All fields are optional — skip anything that doesn't apply.
+            </div>
+
+            {/* Regular income */}
+            <div style={{ fontSize:12, fontWeight:700, color:"#888", letterSpacing:0.5, textTransform:"uppercase", marginBottom:10 }}>
+              Regular Monthly Income
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:20 }}>
+              {inputField("CPF LIFE monthly payout", cpfLife, setCpfLife, "e.g. 1200",
+                "Check projected payout on my.cpf.gov.sg")}
+              {inputField("Work / part-time income", workInc, setWorkInc, "e.g. 500",
+                "Salary, freelance, consulting")}
+              {inputField("Family allowance (from children)", familyAlw, setFamilyAlw, "e.g. 800",
+                "Monthly cash given by children")}
+              {inputField("Rental income (current)", rentalInc, setRentalInc, "e.g. 1500",
+                "If already renting out rooms / flat")}
+              <div style={{ gridColumn:"1 / -1" }}>
+                {inputField("Other regular income", otherInc, setOtherInc, "e.g. 300",
+                  "Dividends already counted separately, overseas pension, etc.")}
+              </div>
+            </div>
+
+            {/* Investments toggle */}
+            <button onClick={() => setShowInvest(v => !v)}
+              style={{ width:"100%", background: showInvest ? "#e6f4f4" : "#f5f5f5",
+                border:`1.5px solid ${showInvest ? TEAL_MID : "#ddd"}`,
+                borderRadius:10, padding:"11px 16px", cursor:"pointer",
+                textAlign:"left", marginBottom: showInvest ? 12 : 16,
+                display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <span style={{ fontSize:14, fontWeight:700, color: showInvest ? TEAL : "#555" }}>
+                📈 I have investments (stocks, REITs, unit trusts, bonds, SSBs…)
+              </span>
+              <span style={{ fontSize:13, color:"#888" }}>{showInvest ? "▲ hide" : "▼ add"}</span>
+            </button>
+
+            {showInvest && (
+              <div style={{ background:"#f8fffe", border:`1px solid ${TEAL_MID}`, borderRadius:10, padding:16, marginBottom:16 }}>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
+                  {inputField("Total portfolio value (S$)", portfolio, setPortfolio, "e.g. 300000", null)}
+                  <div>
+                    <label style={{ display:"block", fontSize:12.5, fontWeight:600, color:"#444", marginBottom:4 }}>
+                      Expected annual return (%)
+                    </label>
+                    <input type="number" value={annualROI} onChange={e => setAnnualROI(e.target.value)}
+                      style={{ padding:"9px 12px", fontSize:14 }} />
+                    <div style={{ fontSize:11, color:"#aaa", marginTop:3 }}>
+                      FD/SSB/bonds ~2.5–3.5% · REITs/balanced ~5–6% · Equity ETFs ~7–8%
+                    </div>
+                  </div>
+                </div>
+                {pv > 0 && (
+                  <div style={{ background:"#fff", borderRadius:8, padding:"10px 14px", fontSize:12.5, color:"#444", lineHeight:1.7 }}>
+                    <div>Monthly income (returns only, no drawdown): <strong style={{ color:TEAL }}>{fmt(monthlyFromReturns)}</strong></div>
+                    <div style={{ color:"#888" }}>
+                      At 4% safe withdrawal rate (drawing down principal): <strong>{fmt(swrMonthly)}/month</strong> — using this would deplete the portfolio over ~25 years
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Savings toggle */}
+            <button onClick={() => setShowSavings(v => !v)}
+              style={{ width:"100%", background: showSavings ? "#e6f4f4" : "#f5f5f5",
+                border:`1.5px solid ${showSavings ? TEAL_MID : "#ddd"}`,
+                borderRadius:10, padding:"11px 16px", cursor:"pointer",
+                textAlign:"left", marginBottom: showSavings ? 12 : 20,
+                display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <span style={{ fontSize:14, fontWeight:700, color: showSavings ? TEAL : "#555" }}>
+                🏦 I have cash savings (FD, savings account, SSBs…)
+              </span>
+              <span style={{ fontSize:13, color:"#888" }}>{showSavings ? "▲ hide" : "▼ add"}</span>
+            </button>
+
+            {showSavings && (
+              <div style={{ background:"#f8fffe", border:`1px solid ${TEAL_MID}`, borderRadius:10, padding:16, marginBottom:20 }}>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
+                  {inputField("Total cash savings (S$)", savingsAmt, setSavingsAmt, "e.g. 200000", null)}
+                  <div>
+                    <label style={{ display:"block", fontSize:12.5, fontWeight:600, color:"#444", marginBottom:4 }}>
+                      Draw down over how many years?
+                    </label>
+                    <input type="number" value={drawdownYears} onChange={e => setDrawdownYears(e.target.value)}
+                      style={{ padding:"9px 12px", fontSize:14 }} />
+                    <div style={{ fontSize:11, color:"#aaa", marginTop:3 }}>
+                      E.g. 25 years to fund age 65–90
+                    </div>
+                  </div>
+                </div>
+                {sv > 0 && (
+                  <div style={{ background:"#fff", borderRadius:8, padding:"10px 14px", fontSize:12.5, color:"#444" }}>
+                    Monthly drawdown: <strong style={{ color:TEAL }}>{fmt(monthlyFromSavings)}/month</strong> over {yrs} years
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Results */}
+            {anyFilled && (
+              <div style={{ border:`2px solid ${hasSurplus ? "#1a6e3c" : GOLD}`,
+                borderRadius:12, padding:16, marginBottom:16,
+                background: hasSurplus ? "#e8f5ee" : "#fdf5e6" }}>
+                <div style={{ fontSize:13, fontWeight:700, color:"#666", letterSpacing:0.5,
+                  textTransform:"uppercase", marginBottom:10 }}>Income Summary</div>
+
+                {inRow("CPF LIFE payout", n(cpfLife))}
+                {inRow("Work / part-time income", n(workInc))}
+                {inRow("Family allowance", n(familyAlw))}
+                {inRow("Rental income", n(rentalInc))}
+                {inRow("Other income", n(otherInc))}
+                {monthlyFromReturns > 0 && inRow(`Investment returns (${roi}% p.a. on ${fmt(pv)})`, monthlyFromReturns)}
+                {monthlyFromSavings > 0 && inRow(`Savings drawdown (over ${yrs} yrs)`, monthlyFromSavings)}
+
+                <div style={{ display:"flex", justifyContent:"space-between", padding:"8px 0",
+                  borderTop:"2px solid #ccc", marginTop:4, fontSize:14, fontWeight:800 }}>
+                  <span>Total monthly income</span>
+                  <span style={{ color: TEAL }}>{fmt(totalIncome)}</span>
+                </div>
+                <div style={{ display:"flex", justifyContent:"space-between", padding:"6px 0",
+                  borderBottom:"1px solid #e0e0e0", fontSize:13 }}>
+                  <span style={{ color:"#555" }}>Monthly expenses</span>
+                  <span style={{ fontWeight:600, color: RED }}>−{fmt(spend)}</span>
+                </div>
+
+                <div style={{ display:"flex", justifyContent:"space-between", padding:"10px 0 4px",
+                  fontSize:15, fontWeight:800 }}>
+                  <span>Monthly {hasSurplus ? "surplus" : "shortfall"}</span>
+                  <span style={{ color: hasSurplus ? "#1a6e3c" : RED }}>
+                    {hasSurplus ? "+" : "−"}{fmt(Math.abs(gap))}
+                  </span>
+                </div>
+
+                {!hasSurplus && spend > 0 && (
+                  <div style={{ fontSize:12.5, color:"#7a5500", marginTop:8, lineHeight:1.5 }}>
+                    Over 20 years, a {fmt(gap)}/month gap adds up to{" "}
+                    <strong>{fmt(gap * 12 * 20)}</strong>. Monetising your flat could help close this gap.
+                  </div>
+                )}
+                {hasSurplus && (
+                  <div style={{ fontSize:12.5, color:"#1a5530", marginTop:8 }}>
+                    Your retirement income comfortably covers your expenses.
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button onClick={() => onContinue(hasSurplus)}
+              style={{ width:"100%", background: TEAL, color:"#fff", border:"none",
+                borderRadius:10, padding:"14px 0", fontSize:15, fontWeight:700, cursor:"pointer" }}>
+              {hasSurplus || !anyFilled
+                ? "Looks good — explore options anyway →"
+                : `I have a shortfall of ${fmt(gap)}/month — show me options →`}
+            </button>
+            <div style={{ fontSize:12, color:"#aaa", marginTop:8, textAlign:"center" }}>
+              You can also skip all fields above and continue
+            </div>
+          </div>
+        );
+      }
+
       // ── Rightsizing calculator ────────────────────────────────────────────
       const RESALE_LEVY = { "2room": 15000, "3room": 30000, "4room": 40000, "5room": 45000, "exec": 50000 };
 
