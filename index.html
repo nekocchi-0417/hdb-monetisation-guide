@@ -1038,6 +1038,13 @@
                   </div>
                 )}
                 {terminal.link&&<a href={terminal.link.url} target="_blank" rel="noreferrer" style={{ display:"inline-block",marginTop:8,fontSize:13,color:tc }}>{terminal.link.text} ↗</a>}
+                {terminal.links&&(
+                  <div style={{ marginTop:10, display:"flex", flexDirection:"column", gap:6 }}>
+                    {terminal.links.map((l,i)=>(
+                      <a key={i} href={l.url} target="_blank" rel="noreferrer" style={{ fontSize:13, color:tc, display:"inline-block" }}>{l.text} ↗</a>
+                    ))}
+                  </div>
+                )}
                 <div style={{ fontSize:12,color:"#888",marginTop:10 }}>
                   Speak with HDB at any branch or via <a href="https://www.hdb.gov.sg" target="_blank" rel="noreferrer" style={{ color:TEAL }}>hdb.gov.sg</a>
                 </div>
