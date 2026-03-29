@@ -893,7 +893,22 @@
               </div>
             )}
 
-            {/* Calculator */}
+            {/* Retirement income calculator */}
+            {node && node.type === "retirementCalc" && (
+              <div style={{ border: `1.5px solid ${TEAL_MID}`, borderRadius: 12, padding: 24, marginBottom: 16, background: TEAL_LIGHT }}>
+                <RetirementCalculator
+                  monthlySpend={userInputs.monthlySpend}
+                  onContinue={(surplus) => {
+                    setHistory(h => [...h, current]);
+                    setUserInputs(p => ({ ...p, hasSurplus: surplus }));
+                    setInputVal("");
+                    setCurrent(surplus ? node.nextSurplus : node.nextGap);
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Rightsizing calculator */}
             {node && node.type === "calculator" && (
               <div style={{ border: `1.5px solid ${TEAL_MID}`, borderRadius: 12, padding: 24, marginBottom: 16, background: TEAL_LIGHT }}>
                 <Calculator userInputs={userInputs} onContinue={() => navigate(node.next)} />
