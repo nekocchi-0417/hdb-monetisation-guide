@@ -117,20 +117,20 @@
       const nodes = {
         q_spend: {
           type:"input", inputType:"number",
-          text:"How much do you (and your spouse) spend per month? (S$)",
-          sub:"Include food, transport, utilities, medical, leisure, loan repayments.",
+          text:"How much do you personally spend per month? (S$)",
+          sub:"Your own expenses: food, transport, utilities, medical, leisure, loan repayments. Do not include spouse or dependents — we'll ask about those next.",
           placeholder:"e.g. 2000", key:"monthlySpend", next:"q_dependents",
         },
         q_dependents: {
           type:"yesno",
-          text:"Do you have dependents whose expenses you need to support?",
-          sub:"e.g. a spouse not in CPF LIFE yet, elderly parents, or children not yet independent.",
+          text:"Do you financially support a spouse or other dependents?",
+          sub:"e.g. a spouse whose income/CPF LIFE hasn't started yet, elderly parents, or children not yet independent.",
           yes:"q_dependents_amt", no:"q_retirement_calc",
         },
         q_dependents_amt: {
           type:"input", inputType:"number",
-          text:"Approximately how much do you spend on dependents per month? (S$)",
-          sub:"This will be added to your monthly expenses in the retirement assessment.",
+          text:"How much do you spend on your spouse / dependents per month? (S$)",
+          sub:"This will be added to your total monthly expenses in the retirement assessment.",
           placeholder:"e.g. 800", key:"dependentsAmt", next:"q_retirement_calc",
         },
         q_retirement_calc: {
