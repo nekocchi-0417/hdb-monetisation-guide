@@ -105,13 +105,12 @@
           type: "input", inputType: "number",
           text: "How much do you (and your spouse) spend per month? (S$)",
           sub: "Include all living costs — food, transport, utilities, medical, leisure, loan repayments.",
-          placeholder: "e.g. 2000", key: "monthlySpend", next: "q_income_ok",
+          placeholder: "e.g. 2000", key: "monthlySpend", next: "q_retirement_calc",
         },
-        q_income_ok: {
-          type: "yesno",
-          text: "Do you have enough income or savings to comfortably cover these expenses for the long term?",
-          sub: "Consider CPF LIFE payouts (if receiving), rental income, savings, investments, and family allowance.",
-          yes: "q_explore_anyway", no: "q_open_monetise",
+        q_retirement_calc: {
+          type: "retirementCalc",
+          nextSurplus: "q_explore_anyway",
+          nextGap: "q_open_monetise",
         },
         q_explore_anyway: {
           type: "yesno",
