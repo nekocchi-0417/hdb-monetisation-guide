@@ -714,54 +714,103 @@
         );
       }
 
-      // ── Bala's curve (lease value depreciation) ───────────────────────────
-      // Approximation: % of 99-year lease value remaining for n-year lease
+      // ── Bala's table (SLA official milestone values, interpolated per year) ─
+      // Source: Singapore Land Authority / Land Betterment Charge Regulations 2022
+      const BALA_PTS=[[0,0],[5,0.171],[10,0.300],[15,0.400],[20,0.480],[24,0.534],
+        [30,0.600],[35,0.646],[40,0.685],[45,0.718],[49,0.741],
+        [55,0.773],[60,0.800],[65,0.830],[70,0.860],[74,0.880],
+        [80,0.910],[85,0.929],[90,0.946],[95,0.956],[99,0.960]];
       function balaFraction(n){
-        const pts=[[0,0],[10,0.227],[20,0.380],[30,0.510],[40,0.621],[50,0.716],[60,0.796],[70,0.863],[80,0.919],[90,0.970],[99,1.000]];
-        if(n<=0)return 0; if(n>=99)return 1;
-        for(let i=1;i<pts.length;i++){
-          if(n<=pts[i][0]){
-            const[x0,y0]=pts[i-1],[x1,y1]=pts[i];
+        if(n<=0)return 0; if(n>=99)return BALA_PTS[BALA_PTS.length-1][1];
+        for(let i=1;i<BALA_PTS.length;i++){
+          if(n<=BALA_PTS[i][0]){
+            const[x0,y0]=BALA_PTS[i-1],[x1,y1]=BALA_PTS[i];
             return y0+(y1-y0)*(n-x0)/(x1-x0);
           }
         }
-        return 1;
+        return BALA_PTS[BALA_PTS.length-1][1];
       }
+
+      // FRS by age group (2025 HDB figures used by LBS)
+      function getFRS(age){ if(age>=80)return 200400; if(age>=70)return 210400; return 220400; }
+      function getBRS(age){ return Math.round(getFRS(age)/2); }
+      // Min lease to retain = max(35, 95 - age)  per HDB LBS rules
+      function minRetain(age){ return Math.max(35, 95-age); }
 
       // ── LBS proceeds estimator ────────────────────────────────────────────
       function LBSCalculator(){
         const[open,        setOpen]       =useState(false);
         const[flatValue,   setFlatValue]  =useState("");
         const[remainLease, setRemainLease]=useState("");
-        const[youngestAge, setYoungestAge]=useState("");
+        const[numOwners,   setNumOwners]  =useState("1");
+        const[age1,        setAge1]       =useState("");
+        const[ra1,         setRa1]        =useState("");
+        const[age2,        setAge2]       =useState("");
+        const[ra2,         setRa2]        =useState("");
         const[outstandingLoan,setOutstandingLoan]=useState("");
         const[flatTypeLBS, setFlatTypeLBS]=useState("3room_smaller");
+        const[hdbQuote,    setHdbQuote]   =useState("");
 
         const n=v=>parseFloat(v)||0;
-        const fv=n(flatValue), rl=n(remainLease), ya=n(youngestAge), loan=n(outstandingLoan);
-        const retainedLease=ya>0?Math.max(0,95-ya):0;
-        const tailLease=rl>0&&retainedLease>0?Math.max(0,rl-retainedLease):0;
+        const twoOwners=numOwners==="2";
+        const fv=n(flatValue), rl=n(remainLease), loan=n(outstandingLoan);
+        const a1=n(age1), a2=twoOwners?n(age2):0;
+        const r1=n(ra1), r2=twoOwners?n(ra2):0;
+        const youngestAge=twoOwners?Math.min(a1||99,a2||99):a1;
+        const retainedLease=youngestAge>0?Math.max(minRetain(youngestAge),0):0;
+
+        // Use HDB quote if provided, otherwise Bala estimate
         const bR=balaFraction(rl), bRet=balaFraction(retainedLease);
         const tailFraction=bR>0?(bR-bRet)/bR:0;
-        const tailValue=Math.round(fv*tailFraction);
-        const netProceeds=Math.max(0,tailValue-loan);
-        const bonus=flatTypeLBS==="4room"?15000:flatTypeLBS==="5room_larger"?7500:30000;
-        // Proceeds: up to FRS goes to CPF RA, excess up to $100k in cash
-        const toRA=Math.min(netProceeds,FRS_2025);
-        const cashPayout=Math.min(Math.max(0,netProceeds-toRA),100000);
-        const canCalc=fv>0&&rl>0&&ya>0;
+        const balaEstimate=Math.round(fv*tailFraction);
+        const grossProceeds=n(hdbQuote)||balaEstimate;
+        const netProceeds=Math.max(0,grossProceeds-loan);
 
-        const row=(label,val,color)=>(
-          <div style={{ display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid #ebebeb",fontSize:13 }}>
-            <span style={{ color:"#555" }}>{label}</span>
-            <span style={{ fontWeight:600,color:color||"#222" }}>{val}</span>
+        // Split per owner (equal 50/50 for simplicity)
+        const share1=twoOwners?0.5:1, share2=twoOwners?0.5:0;
+        const proc1=Math.round(netProceeds*share1), proc2=Math.round(netProceeds*share2);
+
+        // Per-owner RA top-up logic
+        function calcOwner(procShare, currentRA, age, isSole){
+          const target=isSole?getFRS(age):getBRS(age);
+          const needed=Math.max(0,target-currentRA);
+          const topUp=Math.min(needed,procShare);
+          const remaining=procShare-topUp;
+          return{ target, needed, topUp, remaining, newRA:currentRA+topUp };
+        }
+        const isSole=!twoOwners;
+        const o1=calcOwner(proc1,r1,a1,isSole);
+        const o2=twoOwners?calcOwner(proc2,r2,a2,false):{topUp:0,remaining:0,newRA:r2};
+        const totalTopUp=o1.topUp+(twoOwners?o2.topUp:0);
+        const totalRemaining=o1.remaining+(twoOwners?o2.remaining:0);
+
+        // Cash disbursement: up to $100k household, excess to RA
+        const cashPayout=Math.min(totalRemaining,100000);
+        const extraToRA=Math.max(0,totalRemaining-100000);
+
+        // Bonus: full if totalTopUp >= $60k, else pro-rated
+        const maxBonus=flatTypeLBS==="4room"?15000:flatTypeLBS==="5room_larger"?7500:30000;
+        const proRateDivisor=flatTypeLBS==="4room"?4:flatTypeLBS==="5room_larger"?8:2;
+        const bonus=totalTopUp>=60000?maxBonus:Math.min(maxBonus,Math.round(totalTopUp/proRateDivisor));
+
+        const canCalc=fv>0&&rl>0&&youngestAge>0;
+        const retainTail=Math.max(0,rl-retainedLease);
+
+        const row=(label,val,color,sub)=>(
+          <div style={{ padding:"5px 0",borderBottom:"1px solid #ebebeb" }}>
+            <div style={{ display:"flex",justifyContent:"space-between",fontSize:13 }}>
+              <span style={{ color:"#555" }}>{label}</span>
+              <span style={{ fontWeight:600,color:color||"#222" }}>{val}</span>
+            </div>
+            {sub&&<div style={{ fontSize:11,color:"#999",marginTop:1 }}>{sub}</div>}
           </div>
         );
+        const subhead=(t)=>(<div style={{ fontSize:11,fontWeight:700,color:"#888",letterSpacing:0.5,textTransform:"uppercase",marginTop:12,marginBottom:4 }}>{t}</div>);
 
         return(
           <div style={{ border:"1.5px solid #d0d0d0",borderRadius:10,marginBottom:12,overflow:"hidden" }}>
             <button onClick={()=>setOpen(v=>!v)}
-              style={{ width:"100%",background:"#f8f8f8",border:"none",padding:"12px 16px",
+              style={{ width:"100%",background:"#f0f4fb",border:"none",padding:"12px 16px",
                 cursor:"pointer",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center" }}>
               <span style={{ fontSize:13.5,fontWeight:700,color:"#1a4e8c" }}>🧮 Estimate Your LBS Proceeds</span>
               <span style={{ fontSize:12,color:"#888" }}>{open?"▲ hide":"▼ show"}</span>
@@ -769,71 +818,134 @@
             {open&&(
               <div style={{ padding:"14px 16px",background:"#fff" }}>
                 <div style={{ fontSize:12.5,color:"#666",marginBottom:14,lineHeight:1.5 }}>
-                  Rough estimates based on Bala's curve for lease depreciation. Confirm exact figures with HDB (call <strong>6225-5432</strong>).
+                  Estimates use <strong>Bala's curve</strong> (SLA official table). Confirm exact figures with HDB — call <strong>6225-5432</strong> (weekdays 8am–5pm).
                 </div>
-                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12 }}>
+
+                {/* Flat details */}
+                <div style={{ fontSize:11,fontWeight:700,color:"#888",letterSpacing:0.5,textTransform:"uppercase",marginBottom:8 }}>Flat Details</div>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14 }}>
                   <div>
-                    <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Estimated flat market value (S$)</label>
-                    <input type="number" value={flatValue} onChange={e=>setFlatValue(e.target.value)} placeholder="e.g. 500000"
-                      style={{ padding:"9px 12px",fontSize:14 }} />
+                    <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Flat market value (S$)</label>
+                    <input type="number" value={flatValue} onChange={e=>setFlatValue(e.target.value)} placeholder="e.g. 500000" style={{ padding:"9px 12px",fontSize:14 }} />
                     <div style={{ fontSize:11,color:"#aaa",marginTop:3 }}>Check HDB Resale Portal for recent transactions</div>
                   </div>
                   <div>
                     <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Remaining lease (years)</label>
-                    <input type="number" value={remainLease} onChange={e=>setRemainLease(e.target.value)} placeholder="e.g. 60"
-                      style={{ padding:"9px 12px",fontSize:14 }} />
-                    <div style={{ fontSize:11,color:"#aaa",marginTop:3 }}>Found on your HDB title deed or MyHDBPage</div>
+                    <input type="number" value={remainLease} onChange={e=>setRemainLease(e.target.value)} placeholder="e.g. 60" style={{ padding:"9px 12px",fontSize:14 }} />
+                    <div style={{ fontSize:11,color:"#aaa",marginTop:3 }}>On your HDB title or MyHDBPage</div>
                   </div>
                   <div>
-                    <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Age of youngest owner</label>
-                    <input type="number" value={youngestAge} onChange={e=>setYoungestAge(e.target.value)} placeholder="e.g. 68"
-                      style={{ padding:"9px 12px",fontSize:14 }} />
-                    <div style={{ fontSize:11,color:"#aaa",marginTop:3 }}>LBS retains lease until youngest owner is 95</div>
+                    <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>HDB quoted sale price (optional)</label>
+                    <input type="number" value={hdbQuote} onChange={e=>setHdbQuote(e.target.value)} placeholder="If you have HDB's figure" style={{ padding:"9px 12px",fontSize:14 }} />
+                    <div style={{ fontSize:11,color:"#aaa",marginTop:3 }}>Overrides Bala's estimate if entered</div>
                   </div>
                   <div>
-                    <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Outstanding CPF/mortgage loan (S$)</label>
-                    <input type="number" value={outstandingLoan} onChange={e=>setOutstandingLoan(e.target.value)} placeholder="e.g. 0"
-                      style={{ padding:"9px 12px",fontSize:14 }} />
-                    <div style={{ fontSize:11,color:"#aaa",marginTop:3 }}>Must be repaid from proceeds first</div>
+                    <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Outstanding loan / upgrading cost (S$)</label>
+                    <input type="number" value={outstandingLoan} onChange={e=>setOutstandingLoan(e.target.value)} placeholder="e.g. 0" style={{ padding:"9px 12px",fontSize:14 }} />
+                    <div style={{ fontSize:11,color:"#aaa",marginTop:3 }}>Deducted from proceeds first</div>
                   </div>
                 </div>
                 <div style={{ marginBottom:14 }}>
-                  <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Flat type (affects bonus amount)</label>
-                  <select value={flatTypeLBS} onChange={e=>setFlatTypeLBS(e.target.value)} style={{ maxWidth:320 }}>
-                    <option value="3room_smaller">3-room or smaller — bonus $30,000</option>
-                    <option value="4room">4-room — bonus $15,000</option>
-                    <option value="5room_larger">5-room or larger — bonus $7,500</option>
+                  <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Flat type</label>
+                  <select value={flatTypeLBS} onChange={e=>setFlatTypeLBS(e.target.value)} style={{ maxWidth:340 }}>
+                    <option value="3room_smaller">3-room or smaller — max bonus $30,000</option>
+                    <option value="4room">4-room — max bonus $15,000</option>
+                    <option value="5room_larger">5-room or larger — max bonus $7,500</option>
                   </select>
+                </div>
+
+                {/* Owner details */}
+                <div style={{ fontSize:11,fontWeight:700,color:"#888",letterSpacing:0.5,textTransform:"uppercase",marginBottom:8 }}>Owner Details</div>
+                <div style={{ marginBottom:12 }}>
+                  <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:6 }}>Number of owners on the flat</label>
+                  <div style={{ display:"flex",gap:10 }}>
+                    {["1","2"].map(v=>(
+                      <button key={v} onClick={()=>setNumOwners(v)}
+                        style={{ flex:1,padding:"9px 0",borderRadius:8,border:`1.5px solid ${numOwners===v?"#1a4e8c":"#ccc"}`,
+                          background:numOwners===v?"#e8eef8":"#fff",fontWeight:600,color:numOwners===v?"#1a4e8c":"#555",cursor:"pointer",fontSize:13 }}>
+                        {v} owner{v==="2"?"s":""}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ display:"grid",gridTemplateColumns:twoOwners?"1fr 1fr":"1fr 1fr",gap:12,marginBottom:14 }}>
+                  <div>
+                    <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Owner 1 — Age</label>
+                    <input type="number" value={age1} onChange={e=>setAge1(e.target.value)} placeholder="e.g. 68" style={{ padding:"9px 12px",fontSize:14 }} />
+                  </div>
+                  <div>
+                    <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Owner 1 — CPF RA balance (S$)</label>
+                    <input type="number" value={ra1} onChange={e=>setRa1(e.target.value)} placeholder="e.g. 80000" style={{ padding:"9px 12px",fontSize:14 }} />
+                    <div style={{ fontSize:11,color:"#aaa",marginTop:3 }}>Check my.cpf.gov.sg → My Dashboard</div>
+                  </div>
+                  {twoOwners&&(<>
+                    <div>
+                      <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Owner 2 — Age</label>
+                      <input type="number" value={age2} onChange={e=>setAge2(e.target.value)} placeholder="e.g. 65" style={{ padding:"9px 12px",fontSize:14 }} />
+                    </div>
+                    <div>
+                      <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Owner 2 — CPF RA balance (S$)</label>
+                      <input type="number" value={ra2} onChange={e=>setRa2(e.target.value)} placeholder="e.g. 60000" style={{ padding:"9px 12px",fontSize:14 }} />
+                    </div>
+                  </>)}
                 </div>
 
                 {canCalc&&(
                   <div style={{ border:"1.5px solid #b0c8e8",borderRadius:10,padding:"12px 16px",background:"#f0f6fc" }}>
-                    <div style={{ fontSize:13,fontWeight:700,color:"#1a4e8c",marginBottom:10 }}>Estimated LBS Proceeds</div>
+                    <div style={{ fontSize:13.5,fontWeight:700,color:"#1a4e8c",marginBottom:10 }}>Estimated LBS Proceeds</div>
+
+                    {subhead("Lease valuation (Bala's curve)")}
                     {row("Flat market value",fmt(fv),"#1a4e8c")}
-                    {row(`Lease retained (${retainedLease} yrs, to age 95)`,`Bala fraction: ${(bRet*100).toFixed(1)}%`,"#555")}
-                    {row(`Lease sold to HDB (tail: ${tailLease} yrs)`,`${(tailFraction*100).toFixed(1)}% of flat value`,"#555")}
-                    {row("Estimated tail-end value",fmt(tailValue),"#1a4e8c")}
-                    {loan>0&&row("Less: outstanding loan",`−${fmt(loan)}`,"#b33030")}
-                    {row("Net proceeds",fmt(netProceeds),"#1a4e8c")}
-                    <div style={{ height:8 }}/>
-                    {row(`CPF RA top-up (up to FRS $${(FRS_2025/1000).toFixed(0)}k)`,fmt(toRA),"#1a6e3c")}
-                    {cashPayout>0&&row("Cash payout (excess above FRS, up to $100k)",fmt(cashPayout),"#1a6e3c")}
-                    {row(`LBS bonus (${flatTypeLBS==="4room"?"4-room":flatTypeLBS==="5room_larger"?"5-room+":"3-room or smaller"})`,`+${fmt(bonus)}`,"#1a6e3c")}
-                    <div style={{ display:"flex",justifyContent:"space-between",padding:"8px 0",borderTop:"2px solid #9ab8d8",marginTop:4,fontSize:14,fontWeight:800 }}>
-                      <span style={{ color:"#1a4e8c" }}>Total CPF RA (incl. bonus)</span>
-                      <span style={{ color:"#1a6e3c" }}>{fmt(toRA+bonus)}</span>
+                    {row(`Lease to retain (${retainedLease} yrs → youngest owner to age 95)`,`Bala: ${(balaFraction(retainedLease)*100).toFixed(1)}%`,"#555",`Min retain: ${minRetain(youngestAge)} yrs for age ${youngestAge}`)}
+                    {row(`Lease sold to HDB (tail: ${retainTail} yrs)`,`${(tailFraction*100).toFixed(1)}% of flat value`,"#555")}
+                    {n(hdbQuote)>0
+                      ? row("Gross proceeds (HDB quoted)",fmt(grossProceeds),"#1a4e8c","Using HDB's actual figure")
+                      : row("Estimated gross proceeds (Bala)",fmt(grossProceeds),"#1a4e8c","Indicative — actual HDB valuation may differ")}
+                    {loan>0&&row("Less: outstanding loan / upgrading costs",`−${fmt(loan)}`,"#b33030")}
+                    {row("Net proceeds to allocate",fmt(netProceeds),"#1a4e8c")}
+
+                    {subhead("CPF RA top-up")}
+                    <div style={{ fontSize:12,color:"#555",marginBottom:6,lineHeight:1.5 }}>
+                      {isSole
+                        ?<>Sole owner tops up to <strong>FRS ({fmt(getFRS(a1))})</strong>. Requires +{fmt(o1.needed)} but only {fmt(proc1)} available.</>
+                        :<>Each owner tops up to <strong>BRS</strong> (half FRS). With 2 owners, a property pledge covers the other half.</>}
                     </div>
+                    {row(`Owner 1 RA top-up (current: ${fmt(r1)} → target ${fmt(o1.target)})`,`+${fmt(o1.topUp)}`,"#1a6e3c")}
+                    {twoOwners&&row(`Owner 2 RA top-up (current: ${fmt(r2)} → target ${fmt(o2.target)})`,`+${fmt(o2.topUp)}`,"#1a6e3c")}
+                    {row("Total CPF RA top-up",fmt(totalTopUp),"#1a6e3c")}
+
+                    {subhead("Cash disbursement")}
+                    {row("Cash payout (capped at $100k household)",fmt(cashPayout),cashPayout>0?"#1a6e3c":"#888")}
+                    {extraToRA>0&&row("Excess above $100k → further RA top-up",fmt(extraToRA),"#555")}
+
+                    {subhead("LBS bonus")}
+                    <div style={{ fontSize:12,color:"#555",marginBottom:6,lineHeight:1.5 }}>
+                      {totalTopUp>=60000
+                        ?<>Total top-up ≥ $60,000 → <strong>full bonus</strong> awarded.</>
+                        :<>Total top-up {fmt(totalTopUp)} &lt; $60,000 → pro-rated bonus ({flatTypeLBS==="3room_smaller"?"$1 per $2 topped up":flatTypeLBS==="4room"?"$1 per $4 topped up":"$1 per $8 topped up"}).</>}
+                    </div>
+                    {row(`LBS bonus (${flatTypeLBS==="4room"?"4-room":flatTypeLBS==="5room_larger"?"5-room+":"3-room or smaller"})`,`+${fmt(bonus)}`,"#1a6e3c")}
+
+                    <div style={{ display:"flex",justifyContent:"space-between",padding:"9px 0 3px",borderTop:"2px solid #9ab8d8",marginTop:6,fontSize:14,fontWeight:800 }}>
+                      <span style={{ color:"#1a4e8c" }}>Total CPF RA after LBS</span>
+                      <span style={{ color:"#1a6e3c" }}>{fmt(o1.newRA+(twoOwners?o2.newRA:0)+bonus+extraToRA)}</span>
+                    </div>
+                    <div style={{ display:"flex",justifyContent:"space-between",padding:"5px 0 6px",fontSize:13,fontWeight:700 }}>
+                      <span style={{ color:"#555" }}>Cash in hand</span>
+                      <span style={{ color:"#1a6e3c" }}>{fmt(cashPayout)}</span>
+                    </div>
+
                     <div style={{ marginTop:10,padding:"10px 12px",background:"#e8eef8",borderRadius:8,border:"1px solid #a8bae0",fontSize:12,color:"#1a2e6e",lineHeight:1.6 }}>
-                      <strong>What happens next:</strong> The {fmt(toRA+bonus)} in your CPF RA earns <strong>4% interest p.a.</strong> and is used to join <strong>CPF LIFE</strong> for a monthly payout for life. If you pass away before the lease expires, your CPF RA balance goes to your nominated beneficiaries.
+                      <strong>After LBS:</strong> Your CPF RA earns <strong>4% p.a. guaranteed interest</strong>. You'll join <strong>CPF LIFE</strong> for monthly payouts for life. You <em>cannot</em> sublet the flat after joining. If you pass away early, your CPF RA balance goes to nominated beneficiaries.
                     </div>
                     <div style={{ marginTop:8,fontSize:11.5,color:"#888",lineHeight:1.5 }}>
-                      ⚠️ These are indicative estimates based on Bala's curve. Actual valuation is done by HDB. Call HDB at <strong>6225-5432</strong> or visit your nearest HDB branch for a personalised assessment.
+                      ⚠️ Indicative only — based on Bala's curve interpolation. HDB's actual valuation may differ. Call <strong>6225-5432</strong> or visit any HDB branch for a personalised assessment. Reference: <a href="https://thejaminator.github.io/lease_buyback/" target="_blank" rel="noreferrer" style={{ color:"#1a4e8c" }}>Community LBS Calculator ↗</a>
                     </div>
                   </div>
                 )}
                 {!canCalc&&(
                   <div style={{ padding:"10px 12px",background:"#f0f0f0",borderRadius:8,fontSize:13,color:"#777" }}>
-                    Enter your flat value, remaining lease, and youngest owner's age to see the estimate.
+                    Enter your flat value, remaining lease, and owner age(s) to see the estimate.
                   </div>
                 )}
               </div>
