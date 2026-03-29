@@ -714,6 +714,134 @@
         );
       }
 
+      // ── Bala's curve (lease value depreciation) ───────────────────────────
+      // Approximation: % of 99-year lease value remaining for n-year lease
+      function balaFraction(n){
+        const pts=[[0,0],[10,0.227],[20,0.380],[30,0.510],[40,0.621],[50,0.716],[60,0.796],[70,0.863],[80,0.919],[90,0.970],[99,1.000]];
+        if(n<=0)return 0; if(n>=99)return 1;
+        for(let i=1;i<pts.length;i++){
+          if(n<=pts[i][0]){
+            const[x0,y0]=pts[i-1],[x1,y1]=pts[i];
+            return y0+(y1-y0)*(n-x0)/(x1-x0);
+          }
+        }
+        return 1;
+      }
+
+      // ── LBS proceeds estimator ────────────────────────────────────────────
+      function LBSCalculator(){
+        const[open,        setOpen]       =useState(false);
+        const[flatValue,   setFlatValue]  =useState("");
+        const[remainLease, setRemainLease]=useState("");
+        const[youngestAge, setYoungestAge]=useState("");
+        const[outstandingLoan,setOutstandingLoan]=useState("");
+        const[flatTypeLBS, setFlatTypeLBS]=useState("3room_smaller");
+
+        const n=v=>parseFloat(v)||0;
+        const fv=n(flatValue), rl=n(remainLease), ya=n(youngestAge), loan=n(outstandingLoan);
+        const retainedLease=ya>0?Math.max(0,95-ya):0;
+        const tailLease=rl>0&&retainedLease>0?Math.max(0,rl-retainedLease):0;
+        const bR=balaFraction(rl), bRet=balaFraction(retainedLease);
+        const tailFraction=bR>0?(bR-bRet)/bR:0;
+        const tailValue=Math.round(fv*tailFraction);
+        const netProceeds=Math.max(0,tailValue-loan);
+        const bonus=flatTypeLBS==="4room"?15000:flatTypeLBS==="5room_larger"?7500:30000;
+        // Proceeds: up to FRS goes to CPF RA, excess up to $100k in cash
+        const toRA=Math.min(netProceeds,FRS_2025);
+        const cashPayout=Math.min(Math.max(0,netProceeds-toRA),100000);
+        const canCalc=fv>0&&rl>0&&ya>0;
+
+        const row=(label,val,color)=>(
+          <div style={{ display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid #ebebeb",fontSize:13 }}>
+            <span style={{ color:"#555" }}>{label}</span>
+            <span style={{ fontWeight:600,color:color||"#222" }}>{val}</span>
+          </div>
+        );
+
+        return(
+          <div style={{ border:"1.5px solid #d0d0d0",borderRadius:10,marginBottom:12,overflow:"hidden" }}>
+            <button onClick={()=>setOpen(v=>!v)}
+              style={{ width:"100%",background:"#f8f8f8",border:"none",padding:"12px 16px",
+                cursor:"pointer",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center" }}>
+              <span style={{ fontSize:13.5,fontWeight:700,color:"#1a4e8c" }}>🧮 Estimate Your LBS Proceeds</span>
+              <span style={{ fontSize:12,color:"#888" }}>{open?"▲ hide":"▼ show"}</span>
+            </button>
+            {open&&(
+              <div style={{ padding:"14px 16px",background:"#fff" }}>
+                <div style={{ fontSize:12.5,color:"#666",marginBottom:14,lineHeight:1.5 }}>
+                  Rough estimates based on Bala's curve for lease depreciation. Confirm exact figures with HDB (call <strong>6225-5432</strong>).
+                </div>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12 }}>
+                  <div>
+                    <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Estimated flat market value (S$)</label>
+                    <input type="number" value={flatValue} onChange={e=>setFlatValue(e.target.value)} placeholder="e.g. 500000"
+                      style={{ padding:"9px 12px",fontSize:14 }} />
+                    <div style={{ fontSize:11,color:"#aaa",marginTop:3 }}>Check HDB Resale Portal for recent transactions</div>
+                  </div>
+                  <div>
+                    <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Remaining lease (years)</label>
+                    <input type="number" value={remainLease} onChange={e=>setRemainLease(e.target.value)} placeholder="e.g. 60"
+                      style={{ padding:"9px 12px",fontSize:14 }} />
+                    <div style={{ fontSize:11,color:"#aaa",marginTop:3 }}>Found on your HDB title deed or MyHDBPage</div>
+                  </div>
+                  <div>
+                    <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Age of youngest owner</label>
+                    <input type="number" value={youngestAge} onChange={e=>setYoungestAge(e.target.value)} placeholder="e.g. 68"
+                      style={{ padding:"9px 12px",fontSize:14 }} />
+                    <div style={{ fontSize:11,color:"#aaa",marginTop:3 }}>LBS retains lease until youngest owner is 95</div>
+                  </div>
+                  <div>
+                    <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Outstanding CPF/mortgage loan (S$)</label>
+                    <input type="number" value={outstandingLoan} onChange={e=>setOutstandingLoan(e.target.value)} placeholder="e.g. 0"
+                      style={{ padding:"9px 12px",fontSize:14 }} />
+                    <div style={{ fontSize:11,color:"#aaa",marginTop:3 }}>Must be repaid from proceeds first</div>
+                  </div>
+                </div>
+                <div style={{ marginBottom:14 }}>
+                  <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Flat type (affects bonus amount)</label>
+                  <select value={flatTypeLBS} onChange={e=>setFlatTypeLBS(e.target.value)} style={{ maxWidth:320 }}>
+                    <option value="3room_smaller">3-room or smaller — bonus $30,000</option>
+                    <option value="4room">4-room — bonus $15,000</option>
+                    <option value="5room_larger">5-room or larger — bonus $7,500</option>
+                  </select>
+                </div>
+
+                {canCalc&&(
+                  <div style={{ border:"1.5px solid #b0c8e8",borderRadius:10,padding:"12px 16px",background:"#f0f6fc" }}>
+                    <div style={{ fontSize:13,fontWeight:700,color:"#1a4e8c",marginBottom:10 }}>Estimated LBS Proceeds</div>
+                    {row("Flat market value",fmt(fv),"#1a4e8c")}
+                    {row(`Lease retained (${retainedLease} yrs, to age 95)`,`Bala fraction: ${(bRet*100).toFixed(1)}%`,"#555")}
+                    {row(`Lease sold to HDB (tail: ${tailLease} yrs)`,`${(tailFraction*100).toFixed(1)}% of flat value`,"#555")}
+                    {row("Estimated tail-end value",fmt(tailValue),"#1a4e8c")}
+                    {loan>0&&row("Less: outstanding loan",`−${fmt(loan)}`,"#b33030")}
+                    {row("Net proceeds",fmt(netProceeds),"#1a4e8c")}
+                    <div style={{ height:8 }}/>
+                    {row(`CPF RA top-up (up to FRS $${(FRS_2025/1000).toFixed(0)}k)`,fmt(toRA),"#1a6e3c")}
+                    {cashPayout>0&&row("Cash payout (excess above FRS, up to $100k)",fmt(cashPayout),"#1a6e3c")}
+                    {row(`LBS bonus (${flatTypeLBS==="4room"?"4-room":flatTypeLBS==="5room_larger"?"5-room+":"3-room or smaller"})`,`+${fmt(bonus)}`,"#1a6e3c")}
+                    <div style={{ display:"flex",justifyContent:"space-between",padding:"8px 0",borderTop:"2px solid #9ab8d8",marginTop:4,fontSize:14,fontWeight:800 }}>
+                      <span style={{ color:"#1a4e8c" }}>Total CPF RA (incl. bonus)</span>
+                      <span style={{ color:"#1a6e3c" }}>{fmt(toRA+bonus)}</span>
+                    </div>
+                    <div style={{ marginTop:10,padding:"10px 12px",background:"#e8eef8",borderRadius:8,border:"1px solid #a8bae0",fontSize:12,color:"#1a2e6e",lineHeight:1.6 }}>
+                      <strong>What happens next:</strong> The {fmt(toRA+bonus)} in your CPF RA earns <strong>4% interest p.a.</strong> and is used to join <strong>CPF LIFE</strong> for a monthly payout for life. If you pass away before the lease expires, your CPF RA balance goes to your nominated beneficiaries.
+                    </div>
+                    <div style={{ marginTop:8,fontSize:11.5,color:"#888",lineHeight:1.5 }}>
+                      ⚠️ These are indicative estimates based on Bala's curve. Actual valuation is done by HDB. Call HDB at <strong>6225-5432</strong> or visit your nearest HDB branch for a personalised assessment.
+                    </div>
+                  </div>
+                )}
+                {!canCalc&&(
+                  <div style={{ padding:"10px 12px",background:"#f0f0f0",borderRadius:8,fontSize:13,color:"#777" }}>
+                    Enter your flat value, remaining lease, and youngest owner's age to see the estimate.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      }
+
       // ── Rightsizing calculator ────────────────────────────────────────────
       const RESALE_LEVY={ "2room":15000,"3room":30000,"4room":40000,"5room":45000,"exec":50000 };
 
