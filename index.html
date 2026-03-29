@@ -1118,6 +1118,7 @@
                   <div style={{ fontSize:18,fontWeight:800,color:"#1a1a1a" }}>{schemes[scheme].name}</div>
                 </div>
                 <SchemeCard id={scheme} compact={false} />
+                {scheme==="LBS"&&<LBSCalculator />}
                 <GapAnalysis scheme={scheme} userInputs={userInputs} />
                 <CPFRetirementStatus cpfRA={userInputs.cpfRA} />
                 <GovtSchemesCard userInputs={userInputs} />
