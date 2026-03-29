@@ -4,290 +4,604 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HDB Housing Monetisation Guide</title>
-    <meta name="description" content="Interactive decision flowchart to find the right HDB housing monetisation scheme for your retirement" />
+    <meta name="description" content="Interactive decision guide for HDB housing monetisation schemes" />
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
       body { background: #f0f4f4; font-family: 'Segoe UI', Arial, sans-serif; }
+      input[type=number], input[type=text] {
+        width: 100%; padding: 11px 14px; font-size: 16px;
+        border: 1.5px solid #b2d8d8; border-radius: 10px;
+        outline: none; background: #fff; font-family: inherit;
+      }
+      input:focus { border-color: #006B6B; }
+      select {
+        width: 100%; padding: 11px 14px; font-size: 14px;
+        border: 1.5px solid #b2d8d8; border-radius: 10px;
+        outline: none; background: #fff; font-family: inherit; cursor: pointer;
+      }
+      select:focus { border-color: #006B6B; }
+      button { font-family: inherit; }
     </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="text/babel">
+      const { useState } = React;
+
       const TEAL = "#006B6B";
       const TEAL_LIGHT = "#e6f4f4";
       const TEAL_MID = "#b2d8d8";
       const GOLD = "#c8922a";
       const RED = "#b33030";
 
+      // ── Scheme definitions ────────────────────────────────────────────────
       const schemes = {
         SHB: {
           name: "Silver Housing Bonus (SHB)",
-          color: "#1a6e3c",
-          bg: "#e8f5ee",
-          border: "#1a6e3c",
-          summary: "Sell current flat, buy 3-room or smaller HDB flat. Receive cash bonus up to $40,000.",
+          color: "#1a6e3c", bg: "#e8f5ee", border: "#1a6e3c",
+          summary: "Sell current flat → buy 3-room or smaller → cash bonus up to $40,000.",
           details: [
-            "Cash bonus up to $30,000 (3-room flat) or up to $40,000 (2-room or smaller flat)",
-            "Commit net increase of up to $60,000 in CPF RA (can come from CPF housing refunds — no mandatory cash top-up)",
-            "Join CPF LIFE for monthly payouts",
-            "Lump sum from remaining sale proceeds after CPF top-up",
-            "Cannot combine with LBS bonus (but can use LBS proceeds without LBS bonus)",
+            "Bonus: up to $30,000 (3-room) or $40,000 (2-room Flexi or smaller)",
+            "Commit net CPF RA increase of up to $60,000 — sourced from CPF housing refunds (no mandatory cash top-up)",
+            "Join CPF LIFE for monthly payouts for life",
+            "Remaining sale proceeds paid as lump sum after CPF top-up",
+            "Cannot combine LBS bonus with SHB; private property owners eligible if AV ≤ $31,000 (from Dec 2025)",
           ],
-          note: "Best for: Seniors willing to move to a smaller flat and want a cash bonus + higher CPF LIFE payouts.",
+          note: "Best for: Seniors willing to right-size and want a cash bonus + higher CPF LIFE payouts.",
           link: "https://www.hdb.gov.sg/managing-my-home/retirement-planning/monetising-flat-for-retirement/silver-housing-bonus",
         },
         LBS: {
           name: "Lease Buyback Scheme (LBS)",
-          color: "#1a4e8c",
-          bg: "#e8eef8",
-          border: "#1a4e8c",
-          summary: "Stay in your flat. Sell tail-end of lease to HDB. Receive LBS bonus + CPF LIFE payouts.",
+          color: "#1a4e8c", bg: "#e8eef8", border: "#1a4e8c",
+          summary: "Stay in flat. Sell tail-end of lease to HDB for bonus + CPF LIFE payouts.",
           details: [
-            "LBS bonus: up to $30,000 (3-room or smaller), $15,000 (4-room), $7,500 (5-room or bigger)",
-            "Retain lease based on youngest owner's age (covers to age 95)",
-            "Net proceeds top up CPF RA; join CPF LIFE for monthly income for life",
-            "Any cash above CPF requirements: up to $100,000 as lump sum",
+            "Bonus: up to $30,000 (3-room or smaller), $15,000 (4-room), $7,500 (5-room+)",
+            "Retain lease to age 95 based on youngest owner",
+            "Net proceeds top up CPF RA → join CPF LIFE for monthly income for life",
+            "Cash above CPF requirement: up to $100,000 as lump sum",
             "Cannot sell or sublet flat after joining LBS",
           ],
-          note: "Best for: Seniors who want to stay in their flat and convert excess lease into retirement income.",
+          note: "Best for: Seniors who want to stay and convert excess lease into lifelong retirement income.",
           link: "https://www.hdb.gov.sg/managing-my-home/retirement-planning/monetising-flat-for-retirement/lease-buyback-scheme-lbs",
         },
         RENT_FLAT: {
           name: "Rent Out Entire Flat",
-          color: "#7a3e8c",
-          bg: "#f3eaf8",
-          border: "#7a3e8c",
-          summary: "Move out and rent your whole flat for monthly rental income.",
+          color: "#7a3e8c", bg: "#f3eaf8", border: "#7a3e8c",
+          summary: "Move out, rent whole flat for maximum monthly rental income.",
           details: [
-            "Monthly rental income from tenants",
-            "Must move out and live elsewhere (e.g. with family)",
-            "Need to buy or have another place to stay",
-            "Ensure tenants do not further sublet or misuse flat",
-            "Subject to HDB conditions for renting out flat",
+            "Monthly rental income — no income ceiling restriction",
+            "Must vacate and live elsewhere (e.g. with children)",
+            "Tenants cannot further sublet or misuse the flat",
+            "Subject to HDB's conditions for renting out flat",
+            "MOP must be met; approval required from HDB",
           ],
-          note: "Best for: Seniors who can live with family and want maximum rental income from the whole flat.",
+          note: "Best for: Seniors who can move in with family and want maximum rental income.",
           link: "https://www.hdb.gov.sg/managing-my-home/retirement-planning",
         },
         RENT_ROOM: {
           name: "Rent Out Spare Bedroom(s)",
-          color: "#8c5a1a",
-          bg: "#f8f0e8",
-          border: "#8c5a1a",
-          summary: "Stay in your flat and rent out one or more spare bedrooms for monthly income.",
+          color: "#8c5a1a", bg: "#f8f0e8", border: "#8c5a1a",
+          summary: "Stay in flat, rent out spare rooms for monthly income.",
           details: [
-            "Monthly rental income while staying in your flat",
-            "No need to move out",
-            "Must continue to occupy the flat",
-            "Total number of persons in flat must not exceed 6",
-            "Tenants cannot further sublet the room",
+            "Monthly rental income while staying in your flat — no income ceiling",
+            "Must remain resident; total occupants (incl. you) must not exceed 6",
+            "Available for 3-room flats and above (some 2-room Flexi may qualify)",
+            "Short-term rentals (e.g. Airbnb) are not allowed",
+            "Tenants cannot sublet the room further",
           ],
-          note: "Best for: Seniors with spare rooms who want rental income while staying in a familiar home.",
+          note: "Best for: Seniors with spare rooms who want income while staying in a familiar home.",
           link: "https://www.hdb.gov.sg/managing-my-home/retirement-planning",
         },
       };
 
-      const questions = [
-        {
-          id: "q1",
-          text: "Are you a Singapore Citizen, aged 55 or above (for SHB) or 65 or above (for LBS)?",
-          sub: "At least one owner must meet the age & citizenship requirement.",
-          yes: "q2",
-          no: "ineligible_age",
-        },
-        {
-          id: "q2",
-          text: "Is your gross monthly household income $14,000 or less?",
-          sub: "This applies to SHB, LBS, and renting conditions.",
-          yes: "q3",
-          no: "rent_only",
-        },
-        {
-          id: "q3",
-          text: "Have you fulfilled the Minimum Occupation Period (MOP) — at least 5 years in this flat?",
-          sub: "MOP applies to both SHB and LBS.",
-          yes: "q4",
-          no: "wait_mop",
-        },
-        {
-          id: "q4",
-          text: "Do you want to stay in your current flat (not move out)?",
-          sub: "SHB requires you to sell and move; LBS and renting allow you to stay.",
-          yes: "q5_stay",
-          no: "q5_move",
-        },
-        {
-          id: "q5_stay",
-          text: "Do you want to convert part of your flat's lease into retirement income (rather than rent out rooms)?",
-          sub: "LBS sells the tail-end lease to HDB. Renting out rooms keeps your lease intact.",
-          yes: "q6_lbs",
-          no: "q6_rent_room",
-        },
-        {
-          id: "q5_move",
-          text: "Are you willing to sell your flat and buy a smaller HDB flat (3-room or smaller)?",
-          sub: "SHB requires right-sizing to 3-room or smaller. If not, you could rent out the whole flat instead.",
-          yes: "q6_shb",
-          no: "q6_rent_flat",
-        },
-        {
-          id: "q6_shb",
-          text: "Is your current property an HDB flat, or a private property with Annual Value (AV) of $31,000 or less?",
-          sub: "From Dec 2025: SHB extended to private properties with AV up to $31,000.",
-          yes: "q7_shb",
-          no: "ineligible_shb",
-        },
-        {
-          id: "q7_shb",
-          text: "Do you not currently own any other private residential property?",
-          sub: "You must not concurrently own another private property to qualify for SHB.",
-          yes: "result_SHB",
-          no: "ineligible_shb_property",
-        },
-        {
-          id: "q6_lbs",
-          text: "Is your flat an HDB flat (not short-lease, HUDC, or Executive Condominium), and does it have at least 20 years of remaining lease?",
-          sub: "LBS requires at least 20 years remaining lease after the sale.",
-          yes: "q7_lbs",
-          no: "ineligible_lbs",
-        },
-        {
-          id: "q7_lbs",
-          text: "Are ALL owners aged 65 or above?",
-          sub: "For LBS, every owner must be at least 65.",
-          yes: "result_LBS",
-          no: "lbs_age_fail",
-        },
-        {
-          id: "q6_rent_room",
-          text: "Does your flat have a spare bedroom (you'll continue living there)?",
-          sub: "You need a spare room — you must remain resident in the flat.",
-          yes: "result_RENT_ROOM",
-          no: "no_spare_room",
-        },
-        {
-          id: "q6_rent_flat",
-          text: "Do you have another place to stay (e.g. family member's home)?",
-          sub: "Renting out the whole flat requires you to move out.",
-          yes: "result_RENT_FLAT",
-          no: "no_options",
-        },
-      ];
+      // ── Decision nodes ────────────────────────────────────────────────────
+      const nodes = {
 
-      const terminals = {
-        ineligible_age: {
-          type: "error",
-          title: "Not Yet Eligible",
-          msg: "You must be at least 55 (for SHB) or 65 (for LBS), and a Singapore Citizen. Check back when you meet the age requirement.",
+        // Phase 1 — Retirement readiness
+        q_spend: {
+          type: "input", inputType: "number",
+          text: "How much do you (and your spouse) spend per month? (S$)",
+          sub: "Include all living costs — food, transport, utilities, medical, leisure, loan repayments.",
+          placeholder: "e.g. 2000", key: "monthlySpend", next: "q_income_ok",
         },
-        rent_only: {
-          type: "warning",
-          title: "Income Ceiling Exceeded",
-          msg: "SHB and LBS have a $14,000/month gross household income ceiling. You may still be able to rent out your flat or rooms — these have no income ceiling. Consult HDB for details.",
+        q_income_ok: {
+          type: "yesno",
+          text: "Do you have enough income or savings to comfortably cover these expenses for the long term?",
+          sub: "Consider CPF LIFE payouts (if receiving), rental income, savings, investments, and family allowance.",
+          yes: "q_explore_anyway", no: "q_open_monetise",
+        },
+        q_explore_anyway: {
+          type: "yesno",
+          text: "Your finances look comfortable. Would you still like to explore options to maximise your retirement income?",
+          sub: "Many Singaporeans use these schemes to build a larger CPF LIFE buffer, free up cash for healthcare, or reduce reliance on family.",
+          yes: "q_citizen_age", no: "terminal_comfortable",
+        },
+        q_open_monetise: {
+          type: "yesno",
+          text: "Would you be open to using your flat to supplement your retirement income?",
+          sub: "Your flat is likely your largest asset. Options range from staying put (LBS, renting rooms) to right-sizing to a smaller flat (SHB).",
+          yes: "q_citizen_age", no: "q_alt_sources",
+        },
+        q_alt_sources: {
+          type: "yesno",
+          text: "Do you have other means to bridge the gap — e.g. monthly allowance from children, savings, or upcoming CPF LIFE payouts?",
+          sub: "CPF LIFE payouts begin at your payout eligibility age (typically 65). Family support is very common in Singapore.",
+          yes: "terminal_alt_sources", no: "terminal_urgent",
+        },
+
+        // Phase 2 — Basic eligibility
+        q_citizen_age: {
+          type: "yesno",
+          text: "Are you a Singapore Citizen (SC), aged 55 or above?",
+          sub: "At least one owner must be SC aged 55+ for SHB eligibility (65+ for LBS). Singapore PRs are not eligible for SHB or LBS.",
+          yes: "q_mop", no: "ineligible_age",
+        },
+        q_mop: {
+          type: "yesno",
+          text: "Have you lived in this flat for at least 5 years (Minimum Occupation Period)?",
+          sub: "MOP must be met before selling, renting out, or applying for any monetisation scheme.",
+          yes: "q_stay_move", no: "wait_mop",
+        },
+
+        // Phase 3 — Stay or move
+        q_stay_move: {
+          type: "choice",
+          text: "Are you willing to move to a smaller flat, or do you prefer to stay in your current home?",
+          sub: "This is the key fork. Moving opens the Silver Housing Bonus path. Staying opens LBS and rental options.",
+          options: [
+            { label: "Willing to move (right-size)", sub: "Sell and buy a smaller flat — SHB path", next: "q_flat_size" },
+            { label: "Prefer to stay put", sub: "Keep living in my current flat — LBS / rental path", next: "q_rent_open" },
+          ],
+        },
+
+        // Phase 4a — Moving path
+        q_flat_size: {
+          type: "choice",
+          text: "What is the smallest flat you would be comfortable moving into?",
+          sub: "SHB requires buying a 3-room or smaller flat. A smaller flat generally means a lower purchase price and more cash proceeds.",
+          options: [
+            { label: "3-room flat", sub: "~60–65 sqm, 2 bedrooms", next: "q_bto_resale", key: "flatSize", value: "3room" },
+            { label: "2-room Flexi", sub: "~36–45 sqm, 1 bedroom, suitable for 1–2 persons", next: "q_bto_resale", key: "flatSize", value: "2room" },
+            { label: "1-room / Studio", sub: "~33 sqm, for single occupant", next: "q_bto_resale", key: "flatSize", value: "1room" },
+          ],
+        },
+        q_bto_resale: {
+          type: "choice",
+          text: "Would you consider a BTO flat, or do you need a resale flat?",
+          sub: "BTO (new HDB flat) is cheaper but takes 3–5 years. Resale is available immediately but costs more.",
+          options: [
+            { label: "BTO (new flat from HDB)", sub: "Lower price, 3–5 year wait, priority queue available for seniors", next: "q_region", key: "flatType", value: "bto" },
+            { label: "Resale only", sub: "Move in within months, choose specific area and floor", next: "q_region", key: "flatType", value: "resale" },
+            { label: "Open to either", sub: "Flexible on timing", next: "q_region", key: "flatType", value: "either" },
+          ],
+        },
+        q_region: {
+          type: "choice",
+          text: "Do you have a neighbourhood preference for the new flat?",
+          sub: "Living near family may qualify you for grants. Your preferred location also affects realistic price ranges.",
+          options: [
+            { label: "Near my children (within 4 km)", sub: "Eligible for Proximity Housing Grant (PHG) up to $30,000 for resale", next: "q_calculator", key: "region", value: "proximity" },
+            { label: "Same town I live in now", sub: "Stay in a familiar community and social network", next: "q_calculator", key: "region", value: "same_town" },
+            { label: "Flexible — open to any region", sub: "Maximise options for BTO ballot or lower resale price", next: "q_calculator", key: "region", value: "flexible" },
+          ],
+        },
+        q_calculator: { type: "calculator", next: "q_shb_property" },
+
+        // SHB eligibility
+        q_shb_property: {
+          type: "yesno",
+          text: "Is your current property an HDB flat, or a private property with Annual Value (AV) of $31,000 or less?",
+          sub: "From Dec 2025, SHB extended to private property owners with AV ≤ $31,000. Check your AV on the IRAS myTax Portal.",
+          yes: "q_shb_no_private", no: "ineligible_shb",
+        },
+        q_shb_no_private: {
+          type: "yesno",
+          text: "Do you not currently own any other private residential property?",
+          sub: "You must not hold another private residential property concurrently when applying for SHB.",
+          yes: "q_income_shb", no: "ineligible_shb_property",
+        },
+        q_income_shb: {
+          type: "yesno",
+          text: "Is your gross monthly household income $14,000 or less?",
+          sub: "This income ceiling applies to SHB. Household income includes all flat owners' income.",
+          yes: "result_SHB", no: "ineligible_income",
+        },
+
+        // Phase 4b — Staying path
+        q_rent_open: {
+          type: "yesno",
+          text: "Are you open to renting out part or all of your flat for rental income?",
+          sub: "Rental income has no income ceiling. You can rent rooms while staying, or move out temporarily and rent the whole flat.",
+          yes: "q_rent_type", no: "q_legacy",
+        },
+        q_rent_type: {
+          type: "choice",
+          text: "How would you prefer to generate rental income?",
+          options: [
+            { label: "Stay in flat, rent out spare room(s)", sub: "Keep living at home, earn from 1 or more bedrooms", next: "q_spare_room" },
+            { label: "Move out, rent entire flat", sub: "Live with family, maximise rental income from whole flat", next: "q_alt_stay" },
+          ],
+        },
+        q_spare_room: {
+          type: "yesno",
+          text: "Does your flat have a spare bedroom you can rent out?",
+          sub: "1-room flats cannot rent out rooms. 2-room Flexi may be eligible — check with HDB. You must remain living in the flat.",
+          yes: "result_RENT_ROOM", no: "no_spare_room",
+        },
+        q_alt_stay: {
+          type: "yesno",
+          text: "Do you have somewhere else to stay if you move out? (e.g. a child's home)",
+          sub: "To rent out the whole flat, you must vacate. You cannot buy another HDB flat at the same time.",
+          yes: "result_RENT_FLAT", no: "no_options",
+        },
+        q_legacy: {
+          type: "yesno",
+          text: "Is preserving the full flat lease to pass on to your children or family important to you?",
+          sub: "Under LBS, you sell the tail-end of the lease back to HDB. Your heirs would not inherit the sold portion.",
+          yes: "terminal_legacy", no: "q_lbs_flat",
+        },
+        q_lbs_flat: {
+          type: "yesno",
+          text: "Is your flat a standard HDB flat (not short-lease, HUDC, or Executive Condominium) with at least 20 years of lease remaining?",
+          sub: "LBS is only available for standard HDB flats. Short-lease and EC flats are not eligible.",
+          yes: "q_lbs_age", no: "ineligible_lbs",
+        },
+        q_lbs_age: {
+          type: "yesno",
+          text: "Are ALL flat owners aged 65 or above?",
+          sub: "Every owner on the flat title must be at least 65 to qualify for LBS.",
+          yes: "q_income_lbs", no: "lbs_age_fail",
+        },
+        q_income_lbs: {
+          type: "yesno",
+          text: "Is your gross monthly household income $14,000 or less?",
+          sub: "This income ceiling applies to LBS.",
+          yes: "result_LBS", no: "ineligible_income",
+        },
+      };
+
+      // ── Terminals ─────────────────────────────────────────────────────────
+      const terminals = {
+        terminal_comfortable: {
+          type: "success", title: "You're Well-Prepared",
+          msg: "Your retirement finances appear to be on track. You may still consider these schemes to build a larger CPF LIFE buffer, reduce pressure on family, or free up cash for healthcare. Consider a review with CPF Board or an HDB counsellor.",
+          link: { text: "CPF Retirement Planning", url: "https://www.cpf.gov.sg/member/retirement-income" },
+        },
+        terminal_alt_sources: {
+          type: "info", title: "Alternative Sources Identified",
+          msg: "Family support and CPF LIFE payouts are reliable and common for many Singaporeans. Your flat remains an option if needs change. Consider a retirement income review with CPF.",
+          link: { text: "CPF Retirement Planning", url: "https://www.cpf.gov.sg/member/retirement-income" },
+        },
+        terminal_urgent: {
+          type: "error", title: "Consider Seeking Financial Guidance Soon",
+          msg: "If your income falls short and you have no alternative sources, we strongly encourage speaking with an HDB counsellor or CPF advisor. Social assistance schemes like ComCare, GST Vouchers, and MediFund may also provide support.",
+          link: { text: "HDB Retirement Planning", url: "https://www.hdb.gov.sg/managing-my-home/retirement-planning" },
+        },
+        terminal_legacy: {
+          type: "info", title: "Preserving the Flat for Your Family",
+          msg: "That's a valid priority. LBS reduces the lease your heirs inherit, so it may not suit your wishes. Consider renting out spare rooms for income while keeping the full lease intact, or explore financial planning with CPF LIFE and savings.",
+          options: ["RENT_ROOM"],
+          link: { text: "HDB Rental Options", url: "https://www.hdb.gov.sg/managing-my-home/retirement-planning" },
+        },
+        ineligible_age: {
+          type: "warning", title: "Age / Citizenship Requirement Not Met",
+          msg: "SHB requires at least one SC owner aged 55+. LBS requires all owners to be SC aged 65+. PRs are not eligible. You may still rent out your flat or rooms — no age restriction applies to renting.",
           options: ["RENT_ROOM", "RENT_FLAT"],
         },
         wait_mop: {
-          type: "warning",
-          title: "MOP Not Yet Met",
-          msg: "You need to have lived in your flat for at least 5 years before accessing most monetisation schemes. You may still rent out spare bedrooms (check HDB rules for your flat type).",
+          type: "warning", title: "MOP Not Yet Met",
+          msg: "You must have lived in this flat for at least 5 years before selling, renting, or applying for monetisation schemes. Check your MOP date on the HDB portal. In the meantime, plan for which option you want to pursue.",
         },
         ineligible_shb: {
-          type: "warning",
-          title: "Not Eligible for SHB",
-          msg: "SHB requires your current property to be an HDB flat or private property with AV of $31,000 or less (from Dec 2025). Consider LBS (if you stay) or renting.",
+          type: "warning", title: "Property Not Eligible for SHB",
+          msg: "SHB requires an HDB flat or private property with AV ≤ $31,000. If your AV is higher, consider LBS (if staying) or renting instead.",
           options: ["LBS", "RENT_ROOM"],
         },
         ineligible_shb_property: {
-          type: "warning",
-          title: "Private Property Ownership",
-          msg: "You cannot hold another private residential property concurrently when applying for SHB. Consider other options.",
+          type: "warning", title: "Other Private Property Held",
+          msg: "You cannot hold another private residential property when applying for SHB. Disposing of it first may unlock SHB eligibility.",
+          options: ["RENT_ROOM", "RENT_FLAT"],
+        },
+        ineligible_income: {
+          type: "warning", title: "Income Ceiling Exceeded",
+          msg: "SHB and LBS both have a $14,000/month gross household income ceiling. Renting out your flat or rooms has no income ceiling and remains fully available to you.",
           options: ["RENT_ROOM", "RENT_FLAT"],
         },
         ineligible_lbs: {
-          type: "warning",
-          title: "LBS Flat Conditions Not Met",
-          msg: "LBS requires a standard HDB flat (not short-lease, HUDC, or EC) with at least 20 years remaining lease. Consider renting out spare rooms instead.",
+          type: "warning", title: "Flat Not Eligible for LBS",
+          msg: "LBS requires a standard HDB flat (not short-lease, HUDC, or EC) with at least 20 years of remaining lease. Consider renting out spare rooms as an alternative income source.",
           options: ["RENT_ROOM"],
         },
         lbs_age_fail: {
-          type: "warning",
-          title: "LBS Age Requirement",
-          msg: "All owners must be at least 65 for LBS. If you are between 55–64, consider the Silver Housing Bonus (SHB) by right-sizing, or rent out spare bedrooms in the meantime.",
+          type: "warning", title: "LBS Age Requirement Not Met",
+          msg: "All owners must be at least 65 for LBS. If you are 55–64, you may qualify for SHB by right-sizing to a smaller flat, or rent out spare bedrooms in the meantime.",
           options: ["SHB", "RENT_ROOM"],
         },
         no_spare_room: {
-          type: "info",
-          title: "No Spare Bedroom",
-          msg: "Without a spare bedroom, renting out a room isn't viable. You could consider LBS (sell tail-end lease and stay) or SHB (right-size to smaller flat).",
+          type: "info", title: "No Spare Bedroom Available",
+          msg: "Without a spare bedroom, renting a room isn't viable while staying. Consider LBS (sell tail-end lease, stay in flat) or SHB (right-size to a smaller flat).",
           options: ["LBS", "SHB"],
         },
         no_options: {
-          type: "info",
-          title: "Limited Options",
-          msg: "Renting your whole flat requires you to move out. If that's not possible, consider renting a room (if you have one) or LBS (if eligible).",
+          type: "info", title: "Limited Options Without a Place to Move",
+          msg: "Renting your whole flat requires you to vacate. If that isn't feasible, consider renting a spare room (if available) or LBS (if eligible).",
           options: ["RENT_ROOM", "LBS"],
         },
       };
 
-      const terminalColors = { error: RED, warning: GOLD, info: TEAL };
+      const termColors = { error: RED, warning: GOLD, info: TEAL, success: "#1a6e3c" };
+      const termBgs   = { error: "#fdeaea", warning: "#fdf5e6", info: TEAL_LIGHT, success: "#e8f5ee" };
 
+      // ── Scheme card ───────────────────────────────────────────────────────
       function SchemeCard({ id }) {
         const s = schemes[id];
         return (
-          <div style={{ border: `2px solid ${s.border}`, borderRadius: 12, padding: 18, marginBottom: 12, background: s.bg }}>
-            <div style={{ fontWeight: 700, fontSize: 16, color: s.color, marginBottom: 6 }}>{s.name}</div>
-            <div style={{ fontSize: 13.5, color: "#333", marginBottom: 8 }}>{s.summary}</div>
+          <div style={{ border: `2px solid ${s.border}`, borderRadius: 12, padding: 16, marginBottom: 12, background: s.bg }}>
+            <div style={{ fontWeight: 700, fontSize: 15, color: s.color, marginBottom: 5 }}>{s.name}</div>
+            <div style={{ fontSize: 13, color: "#333", marginBottom: 8 }}>{s.summary}</div>
             <ul style={{ margin: 0, paddingLeft: 18 }}>
-              {s.details.map((d, i) => (
-                <li key={i} style={{ fontSize: 13, color: "#444", marginBottom: 3 }}>{d}</li>
-              ))}
+              {s.details.map((d, i) => <li key={i} style={{ fontSize: 12.5, color: "#444", marginBottom: 3 }}>{d}</li>)}
             </ul>
-            <div style={{ marginTop: 10, fontSize: 12.5, color: s.color, fontStyle: "italic" }}>{s.note}</div>
-            <a href={s.link} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 8, fontSize: 12, color: s.color, textDecoration: "underline" }}>
-              HDB Official Page ↗
-            </a>
+            <div style={{ marginTop: 8, fontSize: 12, color: s.color, fontStyle: "italic" }}>{s.note}</div>
+            <a href={s.link} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 8, fontSize: 12, color: s.color }}>HDB Official Page ↗</a>
           </div>
         );
       }
 
-      function App() {
-        const [history, setHistory] = React.useState([]);
-        const [current, setCurrent] = React.useState("q1");
+      // ── Rightsizing calculator ────────────────────────────────────────────
+      const RESALE_LEVY = { "2room": 15000, "3room": 30000, "4room": 40000, "5room": 45000, "exec": 50000 };
 
-        const qMap = Object.fromEntries(questions.map((q) => [q.id, q]));
+      function calcBSD(p) {
+        if (p <= 180000) return p * 0.01;
+        if (p <= 360000) return 1800 + (p - 180000) * 0.02;
+        if (p <= 1000000) return 1800 + 3600 + (p - 360000) * 0.03;
+        return 24600 + (p - 1000000) * 0.04;
+      }
 
-        function answer(next) {
-          setHistory((h) => [...h, current]);
-          setCurrent(next);
-        }
+      function fmt(n) { return "S$" + Math.round(n).toLocaleString(); }
+      function fmtSigned(n) { return (n >= 0 ? "+" : "−") + "S$" + Math.abs(Math.round(n)).toLocaleString(); }
 
-        function goBack() {
-          if (history.length === 0) return;
-          const prev = history[history.length - 1];
-          setHistory((h) => h.slice(0, -1));
-          setCurrent(prev);
-        }
+      function Calculator({ userInputs, onContinue }) {
+        const [salePrice,    setSalePrice]    = useState("");
+        const [cpfUsed,      setCpfUsed]      = useState("");
+        const [yearsOwned,   setYearsOwned]   = useState("");
+        const [newFlatPrice, setNewFlatPrice] = useState("");
+        const [isBTO,        setIsBTO]        = useState(userInputs.flatType === "bto");
+        const [soldFlatType, setSoldFlatType] = useState("4room");
 
-        function restart() {
-          setHistory([]);
-          setCurrent("q1");
-        }
+        const sale    = parseFloat(salePrice)    || 0;
+        const cpf     = parseFloat(cpfUsed)      || 0;
+        const years   = parseFloat(yearsOwned)   || 10;
+        const newFlat = parseFloat(newFlatPrice) || 0;
 
-        const isResult = current.startsWith("result_");
-        const isTerminal = current in terminals;
-        const question = qMap[current];
-        const resultScheme = isResult ? current.replace("result_", "") : null;
-        const terminal = isTerminal ? terminals[current] : null;
+        // CPF refund: principal + accrued interest at OA rate 2.5% p.a.
+        const cpfInterest = Math.round(cpf * (Math.pow(1.025, years) - 1));
+        const cpfRefund   = cpf + cpfInterest;
+
+        // Selling costs
+        const sellingAgent = Math.round(sale * 0.01);
+        const sellingLegal = 3200;
+        const cashFromSale = sale - cpfRefund - sellingAgent - sellingLegal;
+
+        // Buying costs
+        const bsd         = Math.round(calcBSD(newFlat));
+        const buyingAgent = isBTO ? 0 : Math.round(newFlat * 0.005);
+        const buyingLegal = 3200;
+        const levy        = isBTO ? (RESALE_LEVY[soldFlatType] || 0) : 0;
+        const totalBuying = newFlat + bsd + buyingAgent + buyingLegal + levy;
+
+        // CPF available for new flat purchase (from refund; can be used for housing)
+        const cpfForNew   = Math.min(cpfRefund, newFlat);
+        const cashForNew  = Math.max(0, totalBuying - cpfRefund);
+        const cpfLeftover = Math.max(0, cpfRefund - newFlat - bsd - buyingAgent - buyingLegal - levy);
+
+        // Net cash
+        const netCash = cashFromSale - cashForNew;
+
+        // Bonuses
+        const flatSize = userInputs.flatSize || "3room";
+        const shbBonus = flatSize === "3room" ? 30000 : 40000;
+        const phgGrant = (userInputs.region === "proximity" && !isBTO) ? 30000 : 0;
+        const totalWithBonuses = netCash + shbBonus + phgGrant;
+
+        const canCalc = sale > 0 && newFlat > 0;
+
+        const row  = (label, val, color) => (
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #ebebeb", fontSize: 13 }}>
+            <span style={{ color: "#444" }}>{label}</span>
+            <span style={{ fontWeight: 600, color: color || "#222" }}>{val}</span>
+          </div>
+        );
+        const subhead = (t) => (
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: 0.5, textTransform: "uppercase", marginTop: 16, marginBottom: 4 }}>{t}</div>
+        );
+        const totalRow = (label, val, color) => (
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", fontSize: 15, fontWeight: 800, borderTop: "2px solid #ccc", marginTop: 2 }}>
+            <span>{label}</span>
+            <span style={{ color }}>{val}</span>
+          </div>
+        );
 
         return (
-          <div style={{ fontFamily: "'Segoe UI', Arial, sans-serif", maxWidth: 640, margin: "0 auto", padding: "24px 16px", background: "#fff", minHeight: "100vh" }}>
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "#1a1a1a", marginBottom: 4 }}>Rightsizing Proceeds Estimator</div>
+            <div style={{ fontSize: 13, color: "#666", marginBottom: 20, lineHeight: 1.5 }}>
+              Enter your estimated figures for a rough breakdown. All amounts are illustrative — confirm exact figures with HDB and your solicitor.
+            </div>
+
+            {/* Input grid */}
+            <div style={{ display: "grid", gap: 14, marginBottom: 20 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#333", marginBottom: 5 }}>
+                  Estimated sale price of your current flat (S$)
+                </label>
+                <input type="number" value={salePrice} onChange={e => setSalePrice(e.target.value)} placeholder="e.g. 650000" />
+                <div style={{ fontSize: 11.5, color: "#999", marginTop: 4 }}>Check recent resale prices on HDB's Flat Portal</div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#333", marginBottom: 5 }}>CPF used for this flat (S$)</label>
+                  <input type="number" value={cpfUsed} onChange={e => setCpfUsed(e.target.value)} placeholder="e.g. 200000" />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#333", marginBottom: 5 }}>Years you've owned it</label>
+                  <input type="number" value={yearsOwned} onChange={e => setYearsOwned(e.target.value)} placeholder="e.g. 25" />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#333", marginBottom: 5 }}>
+                  Estimated price of new flat you want to buy (S$)
+                </label>
+                <input type="number" value={newFlatPrice} onChange={e => setNewFlatPrice(e.target.value)} placeholder="e.g. 320000" />
+                {userInputs.flatType === "bto" && (
+                  <div style={{ fontSize: 11.5, color: "#999", marginTop: 4 }}>BTO flats are typically 15–30% cheaper than comparable resale flats</div>
+                )}
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#333", marginBottom: 5 }}>Buying a BTO flat?</label>
+                  <select value={isBTO ? "yes" : "no"} onChange={e => setIsBTO(e.target.value === "yes")}>
+                    <option value="no">No (resale flat)</option>
+                    <option value="yes">Yes (new BTO from HDB)</option>
+                  </select>
+                </div>
+                {isBTO && (
+                  <div>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#333", marginBottom: 5 }}>Type of flat you're selling</label>
+                    <select value={soldFlatType} onChange={e => setSoldFlatType(e.target.value)}>
+                      <option value="2room">2-room</option>
+                      <option value="3room">3-room</option>
+                      <option value="4room">4-room</option>
+                      <option value="5room">5-room</option>
+                      <option value="exec">Executive</option>
+                    </select>
+                    <div style={{ fontSize: 11.5, color: "#999", marginTop: 4 }}>Resale levy applies when buying a new subsidised HDB flat</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Results */}
+            {canCalc && (
+              <div style={{ border: "1.5px solid #d8d8d8", borderRadius: 12, padding: "14px 18px", background: "#fafafa", marginBottom: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#333", marginBottom: 8 }}>Estimated Proceeds Breakdown</div>
+
+                {subhead("From sale of current flat")}
+                {row("Gross sale proceeds", fmt(sale), "#1a6e3c")}
+                {row(`Less: CPF refund to OA  (${fmt(cpf)} principal + ${fmt(cpfInterest)} accrued interest @ 2.5%/yr)`, `−${fmt(cpfRefund)}`, RED)}
+                {row("Less: Agent commission (~1%)", `−${fmt(sellingAgent)}`, RED)}
+                {row("Less: Legal & admin fees", `−${fmt(sellingLegal)}`, RED)}
+                {row("= Cash in hand after sale", fmt(cashFromSale), cashFromSale >= 0 ? "#1a6e3c" : RED)}
+
+                {subhead("For purchase of new flat")}
+                {row("New flat purchase price", `−${fmt(newFlat)}`, RED)}
+                {row(`CPF from OA used for purchase (from refund above)`, `+${fmt(cpfForNew)}`, "#1a6e3c")}
+                {row("Less: Buyer's Stamp Duty", `−${fmt(bsd)}`, RED)}
+                {!isBTO && buyingAgent > 0 && row("Less: Agent commission (~0.5%)", `−${fmt(buyingAgent)}`, RED)}
+                {row("Less: Legal & admin fees", `−${fmt(buyingLegal)}`, RED)}
+                {levy > 0 && row(`Less: Resale levy (buying BTO from HDB)`, `−${fmt(levy)}`, RED)}
+                {row("= Net cash out for new flat", `−${fmt(cashForNew)}`, RED)}
+
+                {totalRow("Net cash proceeds", fmt(netCash), netCash >= 0 ? "#1a6e3c" : RED)}
+
+                {subhead("Plus bonuses & grants")}
+                {row(`SHB cash bonus (${flatSize === "3room" ? "3-room" : "2-room or smaller"} flat)`, `+${fmt(shbBonus)}`, "#1a6e3c")}
+                {phgGrant > 0 && row("Proximity Housing Grant (near children, resale)", `+${fmt(phgGrant)}`, "#1a6e3c")}
+
+                {totalRow("Estimated total cash in hand", fmt(totalWithBonuses), totalWithBonuses >= 0 ? "#1a6e3c" : RED)}
+
+                {cpfLeftover > 0 && (
+                  <div style={{ marginTop: 10, fontSize: 12.5, color: "#555" }}>
+                    CPF leftover after purchase: <strong>{fmt(cpfLeftover)}</strong> — this stays in your CPF OA/RA and boosts your CPF LIFE monthly payouts
+                  </div>
+                )}
+
+                {/* CPF age note */}
+                <div style={{ marginTop: 14, padding: "10px 14px", background: "#fff8e6", borderRadius: 8, border: "1px solid #f0d080" }}>
+                  <div style={{ fontSize: 12.5, color: "#7a5500", lineHeight: 1.6 }}>
+                    <strong>CPF note for seniors 55+:</strong> The CPF refund ({fmt(cpfRefund)}) goes back to your CPF OA, <em>not</em> as cash.
+                    You can use CPF OA to pay for the new flat, but after age 55, funds above the Basic Retirement Sum
+                    (~$106,500 in 2025) are swept to your CPF RA. CPF cannot be withdrawn as cash until you meet
+                    the relevant age and retirement sum requirements.
+                    {"\n"}For SHB, you will commit up to {fmt(Math.min(60000, cpfRefund))} (net CPF RA increase) sourced from the
+                    CPF refund — this is <em>not</em> additional cash out of pocket.
+                  </div>
+                </div>
+
+                {isBTO && (
+                  <div style={{ marginTop: 8, padding: "10px 14px", background: "#e8eeff", borderRadius: 8, border: "1px solid #a8baf0" }}>
+                    <div style={{ fontSize: 12.5, color: "#1a2e8c", lineHeight: 1.6 }}>
+                      <strong>BTO note:</strong> Resale levy of {fmt(levy)} applies because you're buying a new subsidised flat
+                      after having owned a subsidised flat before. BTO prices are typically 15–30% below resale.
+                      Seniors may apply under the <strong>Senior Priority Scheme</strong> for a higher ballot chance.
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!canCalc && (
+              <div style={{ padding: "12px 16px", background: "#f0f0f0", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#777" }}>
+                Enter your estimated sale price and target purchase price above to see the breakdown.
+              </div>
+            )}
+
+            <button onClick={onContinue} style={{ width: "100%", background: TEAL, color: "#fff", border: "none", borderRadius: 10, padding: "14px 0", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+              Continue to check SHB eligibility →
+            </button>
+            <div style={{ fontSize: 12, color: "#aaa", marginTop: 8, textAlign: "center" }}>Figures above are optional — you can continue without filling them in</div>
+          </div>
+        );
+      }
+
+      // ── Main App ──────────────────────────────────────────────────────────
+      function App() {
+        const [history,    setHistory]    = useState([]);
+        const [current,    setCurrent]    = useState("q_spend");
+        const [userInputs, setUserInputs] = useState({});
+        const [inputVal,   setInputVal]   = useState("");
+
+        function navigate(next, key, value) {
+          setHistory(h => [...h, current]);
+          if (key) setUserInputs(p => ({ ...p, [key]: value }));
+          setInputVal("");
+          setCurrent(next);
+        }
+        function goBack() {
+          if (!history.length) return;
+          setCurrent(history[history.length - 1]);
+          setHistory(h => h.slice(0, -1));
+        }
+        function restart() {
+          setHistory([]); setCurrent("q_spend");
+          setUserInputs({}); setInputVal("");
+        }
+
+        const isResult   = current.startsWith("result_");
+        const isTerminal = current in terminals;
+        const node        = nodes[current];
+        const scheme      = isResult ? current.replace("result_", "") : null;
+        const terminal    = isTerminal ? terminals[current] : null;
+        const tc = terminal ? (termColors[terminal.type] || TEAL) : TEAL;
+        const tb = terminal ? (termBgs[terminal.type]   || TEAL_LIGHT) : TEAL_LIGHT;
+
+        const btnY = { flex: 1, background: TEAL, color: "#fff", border: "none", borderRadius: 10, padding: "14px 0", fontSize: 15, fontWeight: 700, cursor: "pointer" };
+        const btnN = { flex: 1, background: "#fff", color: "#555", border: "1.5px solid #ccc", borderRadius: 10, padding: "14px 0", fontSize: 15, fontWeight: 700, cursor: "pointer" };
+
+        return (
+          <div style={{ fontFamily: "'Segoe UI', Arial, sans-serif", maxWidth: 680, margin: "0 auto", padding: "24px 16px", background: "#fff", minHeight: "100vh" }}>
+
             {/* Header */}
             <div style={{ background: TEAL, borderRadius: 12, padding: "20px 24px", marginBottom: 24, color: "#fff" }}>
-              <div style={{ fontSize: 11, letterSpacing: 1, opacity: 0.8, marginBottom: 4, textTransform: "uppercase" }}>HDB Retirement Planning</div>
-              <div style={{ fontSize: 20, fontWeight: 700, lineHeight: 1.3 }}>Housing Monetisation Options</div>
-              <div style={{ fontSize: 13, opacity: 0.85, marginTop: 6 }}>Answer a few questions to find the right scheme for you</div>
+              <div style={{ fontSize: 11, letterSpacing: 1, opacity: 0.75, marginBottom: 4, textTransform: "uppercase" }}>HDB Retirement Planning</div>
+              <div style={{ fontSize: 21, fontWeight: 700, lineHeight: 1.3 }}>Housing Monetisation Guide</div>
+              <div style={{ fontSize: 13, opacity: 0.85, marginTop: 6 }}>Answer a few questions to find the right scheme for your situation</div>
             </div>
 
             {/* Nav */}
@@ -297,37 +611,82 @@
                   ← Back
                 </button>
               )}
-              <button onClick={restart} style={{ background: "#f5f5f5", border: "1px solid #ddd", borderRadius: 8, padding: "6px 14px", fontSize: 13, color: "#555", cursor: "pointer" }}>
+              <button onClick={restart} style={{ background: "#f5f5f5", border: "1px solid #ddd", borderRadius: 8, padding: "6px 14px", fontSize: 13, color: "#666", cursor: "pointer" }}>
                 ↺ Restart
               </button>
               <div style={{ flex: 1 }} />
-              <span style={{ fontSize: 12, color: "#888" }}>Step {history.length + 1}</span>
+              <span style={{ fontSize: 12, color: "#aaa" }}>Step {history.length + 1}</span>
             </div>
 
-            {/* Question */}
-            {question && !isResult && !isTerminal && (
+            {/* Yes/No */}
+            {node && node.type === "yesno" && (
               <div style={{ border: `1.5px solid ${TEAL_MID}`, borderRadius: 12, padding: 24, marginBottom: 16, background: TEAL_LIGHT }}>
-                <div style={{ fontSize: 17, fontWeight: 700, color: "#1a1a1a", marginBottom: 8 }}>{question.text}</div>
-                {question.sub && <div style={{ fontSize: 13, color: "#555", marginBottom: 20 }}>{question.sub}</div>}
+                <div style={{ fontSize: 17, fontWeight: 700, color: "#1a1a1a", marginBottom: 8 }}>{node.text}</div>
+                {node.sub && <div style={{ fontSize: 13, color: "#555", marginBottom: 20, lineHeight: 1.6 }}>{node.sub}</div>}
                 <div style={{ display: "flex", gap: 12 }}>
-                  <button onClick={() => answer(question.yes)} style={{ flex: 1, background: TEAL, color: "#fff", border: "none", borderRadius: 10, padding: "14px 0", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
-                    ✓ Yes
+                  <button onClick={() => navigate(node.yes)} style={btnY}>✓ Yes</button>
+                  <button onClick={() => navigate(node.no)}  style={btnN}>✗ No</button>
+                </div>
+              </div>
+            )}
+
+            {/* Number / text input */}
+            {node && node.type === "input" && (
+              <div style={{ border: `1.5px solid ${TEAL_MID}`, borderRadius: 12, padding: 24, marginBottom: 16, background: TEAL_LIGHT }}>
+                <div style={{ fontSize: 17, fontWeight: 700, color: "#1a1a1a", marginBottom: 8 }}>{node.text}</div>
+                {node.sub && <div style={{ fontSize: 13, color: "#555", marginBottom: 14, lineHeight: 1.6 }}>{node.sub}</div>}
+                <input
+                  type={node.inputType || "text"} value={inputVal}
+                  onChange={e => setInputVal(e.target.value)}
+                  placeholder={node.placeholder}
+                  onKeyDown={e => e.key === "Enter" && inputVal && navigate(node.next, node.key, inputVal)}
+                  style={{ marginBottom: 14 }}
+                  autoFocus
+                />
+                <div style={{ display: "flex", gap: 10, flexDirection: "column" }}>
+                  <button onClick={() => inputVal && navigate(node.next, node.key, inputVal)} disabled={!inputVal}
+                    style={{ ...btnY, opacity: inputVal ? 1 : 0.45 }}>
+                    Continue →
                   </button>
-                  <button onClick={() => answer(question.no)} style={{ flex: 1, background: "#fff", color: "#555", border: "1.5px solid #ccc", borderRadius: 10, padding: "14px 0", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
-                    ✗ No
+                  <button onClick={() => navigate(node.next)} style={{ ...btnN, padding: "10px 0", fontSize: 13 }}>
+                    Skip this question
                   </button>
                 </div>
               </div>
             )}
 
+            {/* Multiple choice */}
+            {node && node.type === "choice" && (
+              <div style={{ border: `1.5px solid ${TEAL_MID}`, borderRadius: 12, padding: 24, marginBottom: 16, background: TEAL_LIGHT }}>
+                <div style={{ fontSize: 17, fontWeight: 700, color: "#1a1a1a", marginBottom: 8 }}>{node.text}</div>
+                {node.sub && <div style={{ fontSize: 13, color: "#555", marginBottom: 16, lineHeight: 1.6 }}>{node.sub}</div>}
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {node.options.map((opt, i) => (
+                    <button key={i} onClick={() => navigate(opt.next, opt.key, opt.value)}
+                      style={{ background: "#fff", border: `1.5px solid ${TEAL_MID}`, borderRadius: 10, padding: "13px 16px", cursor: "pointer", textAlign: "left" }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a" }}>{opt.label}</div>
+                      {opt.sub && <div style={{ fontSize: 12.5, color: "#666", marginTop: 3 }}>{opt.sub}</div>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Calculator */}
+            {node && node.type === "calculator" && (
+              <div style={{ border: `1.5px solid ${TEAL_MID}`, borderRadius: 12, padding: 24, marginBottom: 16, background: TEAL_LIGHT }}>
+                <Calculator userInputs={userInputs} onContinue={() => navigate(node.next)} />
+              </div>
+            )}
+
             {/* Result */}
-            {isResult && resultScheme && (
+            {isResult && scheme && (
               <div>
                 <div style={{ background: "#e8f8ef", border: "2px solid #1a6e3c", borderRadius: 12, padding: 18, marginBottom: 16 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: "#1a6e3c", marginBottom: 4 }}>✅ Recommended Option</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: "#1a1a1a" }}>{schemes[resultScheme].name}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "#1a1a1a" }}>{schemes[scheme].name}</div>
                 </div>
-                <SchemeCard id={resultScheme} />
+                <SchemeCard id={scheme} />
                 <div style={{ fontSize: 12.5, color: "#888", marginTop: 12, lineHeight: 1.6 }}>
                   ⚠️ This is a general guide only. Eligibility is subject to HDB's assessment at time of application. Use HDB's{" "}
                   <a href="https://services2.hdb.gov.sg/webapp/BF21HMO/BF21PHMOStart.jsp" target="_blank" rel="noreferrer" style={{ color: TEAL }}>
@@ -340,38 +699,44 @@
 
             {/* Terminal */}
             {isTerminal && terminal && (
-              <div style={{ border: `2px solid ${terminalColors[terminal.type]}`, borderRadius: 12, padding: 20, marginBottom: 16, background: terminal.type === "error" ? "#fdeaea" : terminal.type === "warning" ? "#fdf5e6" : TEAL_LIGHT }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: terminalColors[terminal.type], marginBottom: 8 }}>
-                  {terminal.type === "error" ? "❌" : terminal.type === "warning" ? "⚠️" : "ℹ️"} {terminal.title}
+              <div style={{ border: `2px solid ${tc}`, borderRadius: 12, padding: 20, marginBottom: 16, background: tb }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: tc, marginBottom: 8 }}>
+                  {terminal.type === "error" ? "❌" : terminal.type === "warning" ? "⚠️" : terminal.type === "success" ? "✅" : "ℹ️"}{" "}
+                  {terminal.title}
                 </div>
-                <div style={{ fontSize: 14, color: "#333", lineHeight: 1.6 }}>{terminal.msg}</div>
+                <div style={{ fontSize: 14, color: "#333", lineHeight: 1.65 }}>{terminal.msg}</div>
                 {terminal.options && (
                   <div style={{ marginTop: 16 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#555", marginBottom: 10 }}>Possible alternatives to explore:</div>
-                    {terminal.options.map((id) => <SchemeCard key={id} id={id} />)}
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#555", marginBottom: 10 }}>Alternatives to explore:</div>
+                    {terminal.options.map(id => <SchemeCard key={id} id={id} />)}
                   </div>
                 )}
-                <div style={{ fontSize: 12, color: "#888", marginTop: 10 }}>
-                  Consider speaking with HDB directly at any HDB branch or via{" "}
-                  <a href="https://www.hdb.gov.sg" target="_blank" rel="noreferrer" style={{ color: TEAL }}>hdb.gov.sg</a>.
+                {terminal.link && (
+                  <a href={terminal.link.url} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 10, fontSize: 13, color: tc }}>
+                    {terminal.link.text} ↗
+                  </a>
+                )}
+                <div style={{ fontSize: 12, color: "#888", marginTop: 12 }}>
+                  Speak directly with HDB at any branch or via{" "}
+                  <a href="https://www.hdb.gov.sg" target="_blank" rel="noreferrer" style={{ color: TEAL }}>hdb.gov.sg</a>
                 </div>
               </div>
             )}
 
-            {/* Scheme overview */}
-            {!isResult && !isTerminal && (
+            {/* Scheme overview (during questions) */}
+            {!isResult && !isTerminal && node && node.type !== "calculator" && (
               <div style={{ marginTop: 28 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#888", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 12 }}>The 4 Options at a Glance</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#bbb", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 10 }}>The 4 Options at a Glance</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   {Object.entries(schemes).map(([id, s]) => (
                     <div key={id} style={{ background: s.bg, border: `1.5px solid ${s.border}`, borderRadius: 10, padding: "10px 12px" }}>
-                      <div style={{ fontWeight: 700, fontSize: 12.5, color: s.color }}>{s.name}</div>
-                      <div style={{ fontSize: 11.5, color: "#555", marginTop: 3 }}>{s.summary}</div>
+                      <div style={{ fontWeight: 700, fontSize: 12, color: s.color }}>{s.name}</div>
+                      <div style={{ fontSize: 11, color: "#555", marginTop: 3 }}>{s.summary}</div>
                     </div>
                   ))}
                 </div>
-                <div style={{ fontSize: 11.5, color: "#aaa", marginTop: 12, textAlign: "center" }}>
-                  Updated for Dec 2025 SHB enhancements • Source: HDB
+                <div style={{ fontSize: 11, color: "#ccc", marginTop: 10, textAlign: "center" }}>
+                  Updated for Dec 2025 SHB enhancements · Source: HDB
                 </div>
               </div>
             )}
