@@ -421,7 +421,7 @@
         if(ra>=ERS_2025){ status="Above Enhanced Retirement Sum (ERS)"; color="#1a6e3c"; bg="#e8f5ee"; tip="Excellent. You can join CPF LIFE at the Enhanced tier for the highest monthly payouts."; }
         else if(ra>=FRS_2025){ status="Above Full Retirement Sum (FRS)"; color="#1a4e8c"; bg="#e8eef8"; tip="Good. You're on track for solid CPF LIFE payouts. Consider topping up to ERS for even higher income."; }
         else if(ra>=BRS_2025){ status="Above Basic Retirement Sum (BRS)"; color:GOLD; bg:"#fdf5e6"; color=GOLD; bg="#fdf5e6"; tip="You meet the minimum for CPF LIFE (BRS tier). Topping up to FRS would significantly boost monthly payouts."; }
-        else{ status="Below Basic Retirement Sum (BRS)"; color=RED; bg="#fdeaea"; tip="Consider topping up your CPF RA. The MRSS scheme lets the government match your top-ups up to $600/year."; }
+        else{ status="Below Basic Retirement Sum (BRS)"; color=RED; bg="#fdeaea"; tip="Consider topping up your CPF RA. The MRSS scheme lets the government match your top-ups dollar-for-dollar, up to $2,000/year (lifetime cap $20,000) — if you meet the eligibility criteria."; }
         return(
           <div style={{ border:`1.5px solid ${color}`, borderRadius:10, padding:14, marginBottom:12, background:bg }}>
             <div style={{ fontWeight:700, fontSize:13, color, marginBottom:4 }}>CPF Retirement Account: {fmt(ra)}</div>
