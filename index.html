@@ -1159,15 +1159,17 @@
 
       // ── Main App ──────────────────────────────────────────────────────────
       function App(){
-        const[history,    setHistory]   =useState([]);
-        const[current,    setCurrent]   =useState("q_spend");
-        const[userInputs, setUserInputs]=useState({});
-        const[inputVal,   setInputVal]  =useState("");
+        const[history,      setHistory]     =useState([]);
+        const[current,      setCurrent]     =useState("q_spend");
+        const[userInputs,   setUserInputs]  =useState({});
+        const[inputVal,     setInputVal]    =useState("");
+        const[multiSelected,setMultiSelected]=useState(new Set());
 
         function navigate(next, inputs={}){
           setHistory(h=>[...h,current]);
           if(Object.keys(inputs).length) setUserInputs(p=>({...p,...inputs}));
           setInputVal("");
+          setMultiSelected(new Set());
           setCurrent(next);
         }
         function goBack(){
