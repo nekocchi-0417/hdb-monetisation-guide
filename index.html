@@ -1040,9 +1040,9 @@
         const totalWithBonuses=netCash+shbBonus+phgGrant;
         const canCalc=sale>0&&newFlat>0;
 
-        const row=(label,val,color)=>(
-          <div style={{ display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid #ebebeb",fontSize:13 }}>
-            <span style={{ color:"#555" }}>{label}</span>
+        const rowTip=(label,tip,val,color)=>(
+          <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid #ebebeb",fontSize:13 }}>
+            <span style={{ color:"#555",display:"flex",alignItems:"center" }}>{label}{tip&&<InfoTip text={tip}/>}</span>
             <span style={{ fontWeight:600,color:color||"#222" }}>{val}</span>
           </div>
         );
@@ -1056,19 +1056,22 @@
           </div>
         );
 
+        const flatTypes=userInputs.flatSizes||[];
+        const smallestFlat=flatTypes.includes("cca")||flatTypes.includes("2room")?"small":"3room";
+
         return(
           <div>
             <div style={{ fontSize:17,fontWeight:700,color:"#1a1a1a",marginBottom:4 }}>Rightsizing Proceeds Estimator</div>
             <div style={{ fontSize:13,color:"#666",marginBottom:18,lineHeight:1.5 }}>Rough estimates only — confirm exact figures with HDB and your solicitor.</div>
 
             <div style={{ display:"grid",gap:14,marginBottom:18 }}>
-              <div>{inputField("Estimated sale price of current flat (S$)",salePrice,setSalePrice,"e.g. 650000","Check recent prices on HDB's Flat Portal")}</div>
+              <div>{inputField("Estimated sale price of current flat (S$)",salePrice,setSalePrice,"e.g. 650000","Check recent prices on HDB's Resale Flat Prices portal")}</div>
               <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
-                {inputField("CPF used for this flat (S$)",cpfUsed,setCpfUsed,"e.g. 200000",null)}
-                {inputField("Years owned",yearsOwned,setYearsOwned,"e.g. 25",null)}
+                {inputField("CPF used for this flat (S$)",cpfUsed,setCpfUsed,"e.g. 200000","Check my.cpf.gov.sg → My Home")}
+                {inputField("Years owned",yearsOwned,setYearsOwned,"e.g. 25","Used to calculate CPF accrued interest")}
               </div>
               <div>{inputField("Estimated price of new flat (S$)",newFlatPrice,setNewFlatPrice,"e.g. 320000",
-                userInputs.flatType==="bto"?"BTO flats are typically 15–30% below comparable resale":null)}</div>
+                userInputs.flatType==="bto"?"BTO flats are typically 15–30% below comparable resale prices":null)}</div>
               <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
                 <div>
                   <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Buying a BTO flat?</label>
@@ -1081,8 +1084,9 @@
                   <div>
                     <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Type of flat you're selling</label>
                     <select value={soldFlatType} onChange={e=>setSoldFlatType(e.target.value)}>
-                      <option value="2room">2-room</option><option value="3room">3-room</option>
-                      <option value="4room">4-room</option><option value="5room">5-room</option>
+                      <option value="3room">3-room</option>
+                      <option value="4room">4-room</option>
+                      <option value="5room">5-room</option>
                       <option value="exec">Executive</option>
                     </select>
                     <div style={{ fontSize:11,color:"#aaa",marginTop:3 }}>Resale levy applies when buying a new subsidised flat</div>
@@ -1097,21 +1101,21 @@
               <div style={{ border:"1.5px solid #d8d8d8",borderRadius:12,padding:"12px 16px",background:"#fafafa",marginBottom:14 }}>
                 <div style={{ fontSize:13.5,fontWeight:700,color:"#333",marginBottom:8 }}>Estimated Proceeds Breakdown</div>
                 {subhead("From sale of current flat")}
-                {row("Gross sale proceeds",fmt(sale),"#1a6e3c")}
-                {row(`Less: CPF refund (${fmt(cpf)} principal + ${fmt(cpfInterest)} interest @ 2.5%/yr)`,`−${fmt(cpfRefund)}`,RED)}
-                {row("Less: Agent commission (1%)",`−${fmt(sellingAgent)}`,RED)}
-                {row("Less: Legal & admin fees",`−${fmt(sellingLegal)}`,RED)}
-                {row("= Cash in hand after sale",fmt(cashFromSale),cashFromSale>=0?"#1a6e3c":RED)}
+                {rowTip("Gross sale proceeds",null,fmt(sale),"#1a6e3c")}
+                {rowTip(`Less: CPF refund`,`When you sell, you must refund the CPF principal (${fmt(cpf)}) you used plus accrued interest at 2.5% p.a. over ${years} years (= ${fmt(cpfInterest)}). Total refund: ${fmt(cpfRefund)}. This goes back to your CPF OA.`,`−${fmt(cpfRefund)}`,RED)}
+                {rowTip("Less: Agent commission (1%)","Standard HDB resale agent commission is typically 1% of the sale price. Negotiate with your agent.",`−${fmt(sellingAgent)}`,RED)}
+                {rowTip("Less: Legal & admin fees","Estimated legal conveyancing fees for the sale (~$2,500–$3,500). Confirm with your solicitor.",`−${fmt(sellingLegal)}`,RED)}
+                {rowTip("= Cash in hand after sale","This is the cash you receive. The CPF refund goes to your OA, not here.",fmt(cashFromSale),cashFromSale>=0?"#1a6e3c":RED)}
 
                 {subhead("Purchase of new flat")}
-                {row("New flat price",`−${fmt(newFlat)}`,RED)}
-                {row("CPF from OA used for purchase",`+${fmt(cpfForNew)}`,"#1a6e3c")}
-                {row("Less: Buyer's Stamp Duty",`−${fmt(bsd)}`,RED)}
-                {!isBTO&&buyingAgent>0&&row("Less: Agent commission (1%)",`−${fmt(buyingAgent)}`,RED)}
-                {row("Less: Legal & admin fees",`−${fmt(buyingLegal)}`,RED)}
-                {levy>0&&row("Less: Resale levy (buying new BTO)",`−${fmt(levy)}`,RED)}
-                {renov>0&&row("Less: Renovation cost",`−${fmt(renov)}`,RED)}
-                {row("= Net cash out for new flat",`−${fmt(cashForNew+renov)}`,RED)}
+                {rowTip("New flat price",null,`−${fmt(newFlat)}`,RED)}
+                {rowTip("CPF OA used for purchase","Your CPF OA refund (up to the new flat price) can be used to pay for the new flat, reducing the cash you need.",`+${fmt(cpfForNew)}`,"#1a6e3c")}
+                {rowTip("Less: Buyer's Stamp Duty",`BSD is a tiered tax on the purchase price: 1% on first $180k, 2% on next $180k, 3% on next $640k, 4% above. Your BSD: ${fmt(bsd)}.`,`−${fmt(bsd)}`,RED)}
+                {!isBTO&&buyingAgent>0&&rowTip("Less: Agent commission (1%)","Buyer's agent commission for resale flat, typically 1%.",`−${fmt(buyingAgent)}`,RED)}
+                {rowTip("Less: Legal & admin fees","Estimated legal conveyancing fees for the purchase (~$2,500–$3,500).",`−${fmt(buyingLegal)}`,RED)}
+                {levy>0&&rowTip("Less: Resale levy",`A resale levy applies when you buy a new subsidised (BTO) flat after previously owning a subsidised flat. Amount varies by flat type sold: 3-room $30k, 4-room $40k, 5-room $45k, Exec $50k.`,`−${fmt(levy)}`,RED)}
+                {renov>0&&rowTip("Less: Renovation cost","Your estimated renovation budget for the new flat.",`−${fmt(renov)}`,RED)}
+                {rowTip("= Net cash out for new flat","Total cash you need to pay for the new flat, after using CPF.",`−${fmt(cashForNew+renov)}`,RED)}
 
                 <div style={{ display:"flex",justifyContent:"space-between",padding:"8px 0",borderTop:"2px solid #ccc",marginTop:3,fontSize:14,fontWeight:800 }}>
                   <span>Net cash proceeds</span>
@@ -1119,11 +1123,11 @@
                 </div>
 
                 {subhead("Bonuses & grants")}
-                {row(`SHB bonus (${flatSize==="3room"?"3-room":"2-room / CCA or smaller"})`,`+${fmt(shbBonus)}`,"#1a6e3c")}
-                {phgGrant>0&&row("Proximity Housing Grant (near children)","+ "+fmt(phgGrant),"#1a6e3c")}
+                {rowTip(`SHB bonus`,`Silver Housing Bonus: up to $30,000 when buying a 3-room flat, or up to $40,000 for 2-room Flexi / CCA or smaller. You commit up to $60,000 net CPF RA increase (from the CPF refund — no extra cash needed).`,`+${fmt(shbBonus)}`,"#1a6e3c")}
+                {phgGrant>0&&rowTip("Proximity Housing Grant","PHG of up to $30,000 for buying a resale flat within 4km of your children. Not available for BTO.","+ "+fmt(phgGrant),"#1a6e3c")}
 
                 <div style={{ display:"flex",justifyContent:"space-between",padding:"9px 0 3px",borderTop:"2px solid #ccc",marginTop:3,fontSize:15,fontWeight:800 }}>
-                  <span>Estimated total cash</span>
+                  <span>Estimated total cash + SHB</span>
                   <span style={{ color:totalWithBonuses>=0?"#1a6e3c":RED }}>{fmt(totalWithBonuses)}</span>
                 </div>
 
@@ -1133,18 +1137,19 @@
                   </div>
                 )}
                 <div style={{ marginTop:12,padding:"10px 12px",background:"#fff8e6",borderRadius:8,border:"1px solid #f0d080",fontSize:12.5,color:"#7a5500",lineHeight:1.6 }}>
-                  <strong>CPF note (55+):</strong> The CPF refund ({fmt(cpfRefund)}) goes back to your CPF OA, not as cash. You can use it for the new flat, but funds above the Basic Retirement Sum (~$106,500) may be swept to CPF RA. For SHB, you commit up to {fmt(Math.min(60000,cpfRefund))} net CPF RA increase — this comes from the refund, not additional cash.
+                  <strong>CPF note (55+):</strong> The CPF refund ({fmt(cpfRefund)}) goes back to your CPF OA, not as cash. Funds above the Basic Retirement Sum (~$106,500) may be swept to CPF RA. For SHB, you commit up to {fmt(Math.min(60000,cpfRefund))} net CPF RA increase — from the refund, not extra cash.
                 </div>
                 {isBTO&&levy>0&&(
                   <div style={{ marginTop:8,padding:"10px 12px",background:"#e8eeff",borderRadius:8,border:"1px solid #a8baf0",fontSize:12.5,color:"#1a2e8c",lineHeight:1.6 }}>
-                    <strong>BTO note:</strong> Resale levy of {fmt(levy)} applies (buying new subsidised flat after selling subsidised flat). BTO prices are typically 15–30% below resale. Apply under the <strong>Silver Housing Priority Scheme</strong> for a higher ballot chance.
+                    <strong>BTO note:</strong> Resale levy of {fmt(levy)} applies. BTO prices are typically 15–30% below resale. Apply under the <strong>Silver Housing Priority Scheme</strong> for a higher ballot chance. Check eligibility at <a href="https://www.hdb.gov.sg/cs/infoweb/residential/buying-a-flat/buying-procedure-for-new-flats/eligibility" target="_blank" rel="noreferrer" style={{ color:"#1a2e8c" }}>HDB BTO Eligibility ↗</a>
                   </div>
                 )}
               </div>
             )}
             {!canCalc&&<div style={{ padding:"11px 14px",background:"#f0f0f0",borderRadius:8,marginBottom:14,fontSize:13,color:"#777" }}>Enter your sale price and target purchase price to see the breakdown.</div>}
 
-            <button onClick={onContinue} style={{ width:"100%",background:TEAL,color:"#fff",border:"none",borderRadius:10,padding:"14px 0",fontSize:15,fontWeight:700,cursor:"pointer" }}>
+            <button onClick={()=>onContinue({ netCash, totalWithBonuses, shbBonus, phgGrant, cpfLeftover, calcDone: canCalc })}
+              style={{ width:"100%",background:TEAL,color:"#fff",border:"none",borderRadius:10,padding:"14px 0",fontSize:15,fontWeight:700,cursor:"pointer" }}>
               Continue to check SHB eligibility →
             </button>
             <div style={{ fontSize:12,color:"#aaa",marginTop:8,textAlign:"center" }}>Figures are optional — you can continue without filling them in</div>
