@@ -401,6 +401,38 @@
       const termColors = { error:RED, warning:GOLD, info:TEAL, success:"#1a6e3c", planning:"#1a5c3a" };
       const termBgs    = { error:"#fdeaea", warning:"#fdf5e6", info:TEAL_LIGHT, success:"#e8f5ee", planning:"#e8f5f0" };
 
+      // ── InfoTip: hover tooltip ────────────────────────────────────────────
+      function InfoTip({ text }){
+        const [show,setShow]=useState(false);
+        return(
+          <span style={{ position:"relative",display:"inline-block",marginLeft:5,cursor:"help",verticalAlign:"middle" }}
+            onMouseEnter={()=>setShow(true)} onMouseLeave={()=>setShow(false)}>
+            <span style={{ fontSize:10.5,background:"#ccc",borderRadius:"50%",padding:"1px 5px",color:"#444",fontWeight:700,userSelect:"none",lineHeight:1 }}>i</span>
+            {show&&(
+              <div style={{ position:"absolute",bottom:"calc(100% + 8px)",left:"50%",transform:"translateX(-50%)",
+                background:"#222",color:"#fff",padding:"8px 12px",borderRadius:8,fontSize:12,
+                width:250,zIndex:300,lineHeight:1.6,boxShadow:"0 4px 16px rgba(0,0,0,0.3)",pointerEvents:"none",whiteSpace:"normal" }}>
+                {text}
+                <div style={{ position:"absolute",bottom:-6,left:"50%",transform:"translateX(-50%)",
+                  width:0,height:0,borderLeft:"6px solid transparent",borderRight:"6px solid transparent",borderTop:"6px solid #222" }}/>
+              </div>
+            )}
+          </span>
+        );
+      }
+
+      // ── Piggy bank coin animation ─────────────────────────────────────────
+      function PiggyBankAnim(){
+        return(
+          <div style={{ position:"relative",height:52,marginBottom:6,textAlign:"center" }}>
+            <span style={{ fontSize:28,position:"absolute",left:"50%",bottom:0,transform:"translateX(-50%)" }}>🐷</span>
+            <span className="coin1" style={{ left:"calc(50% - 14px)",top:0 }}>🪙</span>
+            <span className="coin2" style={{ left:"calc(50% - 2px)",top:0 }}>🪙</span>
+            <span className="coin3" style={{ left:"calc(50% + 10px)",top:0 }}>🪙</span>
+          </div>
+        );
+      }
+
       // ── Utilities ─────────────────────────────────────────────────────────
       function fmt(n){ return "S$"+Math.round(n).toLocaleString(); }
       function calcBSD(p){ if(p<=180000)return p*0.01; if(p<=360000)return 1800+(p-180000)*0.02; if(p<=1000000)return 5400+(p-360000)*0.03; return 24600+(p-1000000)*0.04; }
