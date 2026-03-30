@@ -289,8 +289,14 @@
         q_legacy: {
           type:"yesno",
           text:"Are you comfortable with your children not inheriting the full flat?",
-          sub:"Under LBS, you sell the tail-end of your lease to HDB — so your children cannot inherit the full flat. Here's what actually happens if you pass away:\n\n(1) The flat (retained lease): Your eligible family members can choose to continue living in the flat for the remaining lease period (subject to HDB eligibility). If they don't wish to stay or don't qualify, they return the flat to HDB — and HDB reimburses the remaining lease value based on straight-line depreciation (not market value).\n\n(2) Your CPF LIFE: When you join LBS, your RA proceeds become a CPF LIFE premium (like an annuity). If you pass away, monthly payouts stop — but the unused portion of that premium (original premium minus payouts already received) is refunded to your CPF accounts and distributed to your nominees.\n\n(3) While you're alive, your CPF RA earns 4% interest p.a. before being converted to CPF LIFE — significantly more than most savings accounts.\n\nMany families find this a fair trade for lifelong income security. There is no single right answer.",
-          yes:"q_lbs_flat", no:"terminal_legacy",
+          sub:"Under LBS, you sell the tail-end of your lease to HDB. What this means for your family:\n• Flat: Eligible family can continue living in it for the remaining lease, or return it to HDB for a straight-line depreciation refund (not market value).\n• CPF LIFE: Your RA becomes a CPF LIFE premium. If you pass away, the unused portion of that premium is refunded to your CPF nominees.\n• While alive, your CPF RA earns 4% p.a. — well above most savings accounts.\nNo right or wrong answer — it depends on your family's priorities.",
+          yes:"q_lbs_flat", no:"q_legacy_rethink",
+        },
+        q_legacy_rethink: {
+          type:"yesno",
+          text:"Would you consider right-sizing to a smaller flat instead?",
+          sub:"By selling your current flat and buying a smaller one, you keep full ownership — and your children can still inherit, live in, or sell the new flat when the time comes. You may also qualify for the Silver Housing Bonus (up to $40,000 cash).",
+          yes:"q_flat_size", no:"terminal_legacy",
         },
         q_lbs_flat: {
           type:"yesno",
