@@ -1321,7 +1321,7 @@
             {/* Rightsizing calculator */}
             {node&&node.type==="calculator"&&(
               <div style={card}>
-                <Calculator userInputs={userInputs} onContinue={()=>navigate(node.next)} />
+                <Calculator userInputs={userInputs} onContinue={(results)=>navigate(node.next,results)} />
               </div>
             )}
 
