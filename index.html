@@ -210,13 +210,13 @@
 
         // Moving path
         q_flat_size: {
-          type:"choice",
-          text:"What is the smallest flat type you would be comfortable moving into?",
-          sub:"SHB requires buying a 3-room or smaller flat. Smaller flat = lower purchase price = more cash proceeds.",
+          type:"multiChoice",
+          text:"Which flat type(s) are you open to right-sizing into?",
+          sub:"Select all that apply. SHB requires buying a 3-room or smaller flat.",
           options:[
-            { label:"3-room flat", sub:"~60–65 sqm, 2 bedrooms — BTO or resale", next:"q_bto_resale", inputs:{ flatSize:"3room" } },
-            { label:"2-room Flexi", sub:"~36–45 sqm, 1 bedroom — BTO only (no resale)", next:"q_region", inputs:{ flatSize:"2room", flatType:"bto" } },
-            { label:"Community Care Apartment (CCA)", sub:"Studio-style, senior-friendly care services built in — BTO only, for seniors 65+", next:"q_region", inputs:{ flatSize:"cca", flatType:"bto" } },
+            { id:"3room", label:"3-room flat", sub:"~60–65 sqm · 2 bedrooms · BTO or resale available", badge:"BTO / Resale" },
+            { id:"2room", label:"2-room Flexi", sub:"~36–45 sqm · 1 bedroom · BTO only, no resale option · Senior lease (35 or 45 yr) available", badge:"BTO only" },
+            { id:"cca",   label:"Community Care Apartment (CCA)", sub:"Studio · Senior care services built in · BTO only · Must be aged 65+ to apply", badge:"BTO only · Age 65+" },
           ],
         },
         q_bto_resale: {
