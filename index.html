@@ -1294,13 +1294,19 @@
               const canGo=multiSelected.size>0;
               const onGo=()=>{
                 const selected=[...multiSelected];
-                const hasBTOOnly=selected.includes("2room")||selected.includes("cca");
+                const hasCCA=selected.includes("cca");
+                const has2room=selected.includes("2room");
                 const has3room=selected.includes("3room");
-                // Determine smallest flat for SHB bonus purposes
+                const hasBTOOnly=has2room||hasCCA;
                 const flatSize=hasBTOOnly?"small":"3room";
                 const inputs={ flatSizes:selected, flatSize,
                   ...(hasBTOOnly&&!has3room?{flatType:"bto"}:{}) };
-                navigate(has3room?"q_bto_resale":"q_region", inputs);
+                // CCA requires all owners 65+ — gate through age check first
+                if(hasCCA){
+                  navigate("q_cca_age_check", inputs);
+                } else {
+                  navigate(has3room?"q_bto_resale":"q_region", inputs);
+                }
               };
               return(
                 <div style={card}>
