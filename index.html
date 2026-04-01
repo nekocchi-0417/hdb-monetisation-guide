@@ -166,10 +166,16 @@
         },
 
         // Eligibility
-        q_citizen_age: {
+        q_is_sc: {
           type:"yesno",
-          text:"Are you a Singapore Citizen (SC), aged 55 or above?",
-          sub:"At least one owner must be SC aged 55+ for SHB eligibility (65+ for LBS). PRs are not eligible for SHB or LBS.",
+          text:"Is at least one flat owner a Singapore Citizen (SC)?",
+          sub:"Both SHB and LBS require at least one owner to be a Singapore Citizen. Permanent Residents (PRs) are not eligible for either scheme — though rental options remain open to all HDB owners who have met MOP.",
+          yes:"q_age_55", no:"ineligible_pr",
+        },
+        q_age_55: {
+          type:"yesno",
+          text:"Is the SC owner aged 55 or above?",
+          sub:"SHB requires the applicant SC owner to be at least 55. LBS additionally requires all owners to be 65+.",
           yes:"q_mop", no:"ineligible_age",
         },
         q_mop: {
