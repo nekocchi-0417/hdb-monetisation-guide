@@ -225,6 +225,13 @@
             { id:"cca",   label:"Community Care Apartment (CCA)", sub:"Studio · Senior care services built in · BTO only · Must be aged 65+ to apply", badge:"BTO only · Age 65+" },
           ],
         },
+        q_cca_age_check: {
+          type:"yesno",
+          text:"Are all flat owners aged 65 or above?",
+          sub:"Community Care Apartments (CCA) require every owner on the flat title to be at least 65. If not, CCA won't be available — but you can still right-size to a 3-room or 2-room Flexi flat instead.",
+          yes:(inputs)=>inputs.flatSizes?.includes("3room")?"q_bto_resale":"q_region",
+          no:"ineligible_cca",
+        },
         q_bto_resale: {
           type:"choice",
           text:"Would you consider a BTO flat, or do you need a resale flat?",
