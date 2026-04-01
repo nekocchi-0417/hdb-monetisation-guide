@@ -368,6 +368,16 @@
           msg:"You need to have lived in this flat for at least 5 years (MOP). Check your MOP completion date on the HDB portal. You're in a good position to plan now.",
           tipNow:"Use this time to: check projected CPF LIFE payouts, explore the MRSS scheme, and decide whether you'd prefer to right-size or stay when the time comes.",
         },
+        ineligible_pr: {
+          type:"warning", title:"SHB and LBS Are for Singapore Citizens Only",
+          msg:"Both schemes require at least one Singapore Citizen owner. As a Permanent Resident, you are not eligible for SHB or LBS. However, renting out your flat or spare rooms has no citizenship restriction and remains fully available once MOP is met.",
+          options:["RENT_ROOM","RENT_FLAT"],
+        },
+        ineligible_cca: {
+          type:"warning", title:"Community Care Apartments Require All Owners to Be 65+",
+          msg:"CCA is designed specifically for seniors aged 65 and above. If you or a co-owner is under 65, CCA is not available yet. You can still right-size to a 3-room or 2-room Flexi flat and qualify for the Silver Housing Bonus.",
+          options:["SHB"],
+        },
         ineligible_shb: {
           type:"warning", title:"Property Not Eligible for SHB",
           msg:"SHB requires an HDB flat or private property with AV ≤ $31,000. If your AV is higher, consider LBS (if staying) or renting instead.",
