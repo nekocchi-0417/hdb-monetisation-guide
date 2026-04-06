@@ -789,16 +789,27 @@
                   <span style={{ color:"#555" }}>Monthly expenses{parseFloat(dependentsAmt)>0?" (incl. dependents)":""}</span>
                   <span style={{ fontWeight:600,color:RED }}>−{fmt(spend)}</span>
                 </div>
+                {hasIdeal&&(
+                  <div style={{ display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid #e0e0e0",fontSize:13 }}>
+                    <span style={{ color:"#555" }}>💭 Ideal monthly budget</span>
+                    <span style={{ fontWeight:600,color:"#1a4e8c" }}>−{fmt(idealSpend)}</span>
+                  </div>
+                )}
                 <div style={{ display:"flex",justifyContent:"space-between",padding:"9px 0 3px",fontSize:15,fontWeight:800 }}>
-                  <span>Monthly {hasSurplus?"surplus":"shortfall"}</span>
+                  <span>Monthly {hasSurplus?"surplus":"shortfall"}{hasIdeal?" (vs ideal budget)":""}</span>
                   <span style={{ color:hasSurplus?"#1a6e3c":RED }}>{hasSurplus?"+":"−"}{fmt(Math.abs(gap))}</span>
                 </div>
+                {hasIdeal&&!hasSurplus&&currentGap<=0&&(
+                  <div style={{ fontSize:12,color:"#1a4e8c",marginTop:4 }}>
+                    ✓ Your income covers basic expenses (surplus {fmt(Math.abs(currentGap))}/month), but falls {fmt(gap)}/month short of your ideal budget.
+                  </div>
+                )}
                 {!hasSurplus&&spend>0&&(
                   <div style={{ fontSize:12.5,color:"#7a5500",marginTop:6,lineHeight:1.5 }}>
                     Over 20 years, a {fmt(gap)}/month gap totals <strong>{fmt(gap*12*20)}</strong>. Monetising your flat could help close this.
                   </div>
                 )}
-                {hasSurplus&&<div style={{ fontSize:12.5,color:"#1a5530",marginTop:6 }}>Your retirement income comfortably covers your expenses.</div>}
+                {hasSurplus&&<div style={{ fontSize:12.5,color:"#1a5530",marginTop:6 }}>Your income covers {hasIdeal?"your ideal budget":"your expenses"} — you're in a strong position.</div>}
                 {idealSpend>spend&&(
                   <div style={{ marginTop:10,padding:"10px 12px",background:"#f0f8ff",borderRadius:8,border:"1px solid #b8d8f0" }}>
                     <div style={{ fontSize:12,fontWeight:700,color:"#1a4e8c",marginBottom:4 }}>💭 Ideal lifestyle budget: {fmt(idealSpend)}/month</div>
