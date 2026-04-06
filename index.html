@@ -277,7 +277,7 @@
           type:"yesno",
           text:"Are you open to renting out part or all of your flat for rental income?",
           sub:"No income ceiling applies to renting. You can rent rooms while staying, or move out temporarily.",
-          yes:"q_rent_type", no:"q_legacy",
+          yes:"q_rent_type", no:(inputs)=>inputs.priorityChildren?"q_legacy_bequest":"q_lbs_flat",
         },
         q_rent_type: {
           type:"choice",
