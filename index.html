@@ -826,7 +826,9 @@
               style={{ width:"100%",background:TEAL,color:"#fff",border:"none",borderRadius:10,padding:"14px 0",fontSize:15,fontWeight:700,cursor:"pointer" }}>
               {hasSurplus||!anyFilled
                 ?"Looks good — explore options anyway →"
-                :`I have a shortfall of ${fmt(gap)}/month — show me options →`}
+                :hasIdeal&&currentGap<=0
+                  ?`Income covers basics but ${fmt(gap)}/month short of ideal — show me options →`
+                  :`I have a shortfall of ${fmt(gap)}/month — show me options →`}
             </button>
             <div style={{ fontSize:12,color:"#aaa",marginTop:8,textAlign:"center" }}>You can skip all fields and continue</div>
           </div>
