@@ -186,13 +186,19 @@
           type:"yesno",
           text:"Have you lived in this flat for at least 5 years (Minimum Occupation Period)?",
           sub:"MOP must be met before selling, renting, or applying for any monetisation scheme.",
-          yes:"q_cpf_ra", no:"wait_mop",
+          yes:"q_stay_move", no:"wait_mop",
         },
         q_cpf_ra: {
           type:"input", inputType:"number",
           text:"What is your CPF Retirement Account (RA) balance approximately? (S$)",
-          sub:"Optional — helps us assess your CPF LIFE readiness. Find this on my.cpf.gov.sg → My Dashboard.",
-          placeholder:"e.g. 80000", key:"cpfRA", next:"q_stay_move",
+          sub:"Optional — helps us check if you qualify for cash bonuses under SHB. Find this on my.cpf.gov.sg → My Dashboard.",
+          placeholder:"e.g. 80000", key:"cpfRA", next:"result_SHB",
+        },
+        q_cpf_ra_lbs: {
+          type:"input", inputType:"number",
+          text:"What is your CPF Retirement Account (RA) balance approximately? (S$)",
+          sub:"Optional — helps us check if you qualify for cash bonuses under LBS. Find this on my.cpf.gov.sg → My Dashboard.",
+          placeholder:"e.g. 80000", key:"cpfRA", next:"result_LBS",
         },
 
         // Stay or move
