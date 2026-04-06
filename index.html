@@ -1316,8 +1316,8 @@
                 <div style={{ fontSize:17,fontWeight:700,color:"#1a1a1a",marginBottom:8 }}>{node.text}</div>
                 {node.sub&&<div style={{ fontSize:13,color:"#555",marginBottom:20,lineHeight:1.7,whiteSpace:"pre-line" }}>{node.sub}</div>}
                 <div style={{ display:"flex",gap:12 }}>
-                  <button onClick={()=>navigate(typeof node.yes==="function"?node.yes(userInputs):node.yes)} style={btnY}>✓ Yes</button>
-                  <button onClick={()=>navigate(typeof node.no==="function"?node.no(userInputs):node.no)}   style={btnN}>✗ No</button>
+                  <button onClick={()=>{const r=typeof node.yes==="function"?node.yes(userInputs):node.yes;typeof r==="object"?navigate(r.next,r.extraInputs||{}):navigate(r);}} style={btnY}>✓ Yes</button>
+                  <button onClick={()=>{const r=typeof node.no==="function"?node.no(userInputs):node.no;typeof r==="object"?navigate(r.next,r.extraInputs||{}):navigate(r);}}   style={btnN}>✗ No</button>
                 </div>
               </div>
             )}
