@@ -1233,26 +1233,13 @@
               </div>
               <div>{inputField("Estimated price of new flat (S$)",newFlatPrice,setNewFlatPrice,"e.g. 320000",
                 userInputs.flatType==="bto"?"BTO flats are typically 15–30% below comparable resale prices":null)}</div>
-              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
-                <div>
-                  <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Buying a BTO flat?</label>
-                  <select value={isBTO?"yes":"no"} onChange={e=>setIsBTO(e.target.value==="yes")}>
-                    <option value="no">No (resale flat)</option>
-                    <option value="yes">Yes (new BTO from HDB)</option>
-                  </select>
-                </div>
-                {isBTO&&(
-                  <div>
-                    <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Type of flat you're selling</label>
-                    <select value={soldFlatType} onChange={e=>setSoldFlatType(e.target.value)}>
-                      <option value="3room">3-room</option>
-                      <option value="4room">4-room</option>
-                      <option value="5room">5-room</option>
-                      <option value="exec">Executive</option>
-                    </select>
-                    <div style={{ fontSize:11,color:"#aaa",marginTop:3 }}>Resale levy applies when buying a new subsidised flat</div>
-                  </div>
-                )}
+              <div>
+                <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#333",marginBottom:4 }}>Buying a BTO flat?</label>
+                <select value={isBTO?"yes":"no"} onChange={e=>setIsBTO(e.target.value==="yes")}>
+                  <option value="no">No (resale flat)</option>
+                  <option value="yes">Yes (new BTO from HDB)</option>
+                </select>
+                {isBTO&&<div style={{ fontSize:11,color:"#aaa",marginTop:3 }}>Resale levy of {fmt(RESALE_LEVY[soldFlatType]||0)} applies (based on flat type selected above)</div>}
               </div>
               <div>{inputField("Estimated renovation cost for new flat (S$)",renovCost,setRenovCost,"e.g. 30000",
                 "Basic: ~$20–40k · Moderate: ~$40–70k · Full renovation: $70k+")}</div>
