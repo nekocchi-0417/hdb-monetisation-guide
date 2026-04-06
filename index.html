@@ -1162,13 +1162,17 @@
             {/* Market price lookup */}
             <div style={{ marginBottom:18,padding:"12px 14px",background:"#f8fffe",border:`1px solid ${TEAL_MID}`,borderRadius:10 }}>
               <div style={{ fontSize:12.5,fontWeight:700,color:TEAL,marginBottom:8 }}>💹 Get real market data (optional)</div>
-              <div style={{ display:"grid",gridTemplateColumns:"1fr auto",gap:10,alignItems:"flex-end" }}>
+              <div style={{ display:"grid",gridTemplateColumns:"1fr 120px auto",gap:10,alignItems:"flex-end" }}>
                 <div>
                   <label style={{ display:"block",fontSize:12,fontWeight:600,color:"#444",marginBottom:4 }}>Your town / area</label>
                   <select value={town} onChange={e=>setTown(e.target.value)}>
                     <option value="">— select town —</option>
                     {HDB_TOWNS.map(t=><option key={t} value={t}>{t.split(' ').map(w=>w.charAt(0)+w.slice(1).toLowerCase()).join(' ')}</option>)}
                   </select>
+                </div>
+                <div>
+                  <label style={{ display:"block",fontSize:12,fontWeight:600,color:"#444",marginBottom:4 }}>Remaining lease (yrs)</label>
+                  <input type="number" value={fetchLease} onChange={e=>setFetchLease(e.target.value)} placeholder="e.g. 60" style={{ padding:"9px 10px",fontSize:13 }} />
                 </div>
                 <button onClick={fetchEstimates} disabled={fetching||!town}
                   style={{ background:TEAL,color:"#fff",border:"none",borderRadius:10,padding:"10px 16px",
