@@ -1419,7 +1419,10 @@
                           <div style={{ flex:1 }}>
                             <div style={{ fontSize:15,fontWeight:700,color:sel?"#1a4e8c":"#1a1a1a",marginBottom:3 }}>{opt.label}</div>
                             {opt.sub&&<div style={{ fontSize:12,color:"#666",lineHeight:1.5 }}>{opt.sub}</div>}
-                            {opt.badge&&<span style={{ display:"inline-block",marginTop:5,fontSize:10.5,background:sel?"#1a4e8c":"#888",color:"#fff",borderRadius:12,padding:"2px 8px" }}>{opt.badge}</span>}
+                            <div style={{ display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginTop:5 }}>
+                              {opt.badge&&<span style={{ fontSize:10.5,background:sel?"#1a4e8c":"#888",color:"#fff",borderRadius:12,padding:"2px 8px" }}>{opt.badge}</span>}
+                              {opt.link&&<a href={opt.link} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{ fontSize:10.5,color:sel?"#1a4e8c":TEAL,textDecoration:"underline" }}>HDB info ↗</a>}
+                            </div>
                           </div>
                           <span style={{ fontSize:20,marginLeft:10,marginTop:2,flexShrink:0 }}>{sel?"✅":"⬜"}</span>
                         </button>
