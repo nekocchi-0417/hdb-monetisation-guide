@@ -230,7 +230,12 @@
           text:"Are all flat owners aged 65 or above?",
           sub:"Community Care Apartments (CCA) require every owner on the flat title to be at least 65. If not, CCA won't be available — but you can still right-size to a 3-room or 2-room Flexi flat instead.",
           yes:(inputs)=>inputs.flatSizes?.includes("3room")?"q_bto_resale":"q_region",
-          no:"ineligible_cca",
+          no:(inputs)=>{
+            const sizes=(inputs.flatSizes||[]).filter(s=>s!=="cca");
+            if(sizes.includes("3room")) return {next:"q_bto_resale",extraInputs:{flatSizes:sizes,flatSize:"3room",_ccaExcluded:true}};
+            if(sizes.includes("2room")) return {next:"q_region",extraInputs:{flatSizes:sizes,flatSize:"small",flatType:"bto",_ccaExcluded:true}};
+            return {next:"ineligible_cca",extraInputs:{}};
+          },
         },
         q_bto_resale: {
           type:"choice",
