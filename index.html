@@ -810,15 +810,6 @@
                   </div>
                 )}
                 {hasSurplus&&<div style={{ fontSize:12.5,color:"#1a5530",marginTop:6 }}>Your income covers {hasIdeal?"your ideal budget":"your expenses"} — you're in a strong position.</div>}
-                {idealSpend>spend&&(
-                  <div style={{ marginTop:10,padding:"10px 12px",background:"#f0f8ff",borderRadius:8,border:"1px solid #b8d8f0" }}>
-                    <div style={{ fontSize:12,fontWeight:700,color:"#1a4e8c",marginBottom:4 }}>💭 Ideal lifestyle budget: {fmt(idealSpend)}/month</div>
-                    {totalIncome>=idealSpend
-                      ?<div style={{ fontSize:12,color:"#1a4e8c" }}>✓ Your income also covers your ideal budget. Great position!</div>
-                      :<div style={{ fontSize:12,color:"#1a4e8c" }}>Gap to ideal budget: <strong>−{fmt(idealSpend-totalIncome)}/month</strong>. Monetising your flat could help bridge this.</div>
-                    }
-                  </div>
-                )}
               </div>
             )}
 
