@@ -1115,7 +1115,7 @@
           try{
             const sellType=FLAT_API[soldFlatType]||"4 ROOM";
             const d1=await fetchWithRetry(API+encodeURIComponent(JSON.stringify({flat_type:sellType,town})));
-            const sellRecords=filterByLease(d1.result.records);
+            const sellRecords=filterRecords(d1.result.records);
             const sellMed=median(sellRecords.map(r=>parseInt(r.resale_price)));
             if(sellMed) setSalePrice(String(sellMed));
 
