@@ -629,8 +629,9 @@
       }
 
       // ── Retirement income calculator ───────────────────────────────────────
-      function RetirementCalculator({ monthlySpend, dependentsAmt, onContinue }){
+      function RetirementCalculator({ monthlySpend, dependentsAmt, idealMonthlySpend, onContinue }){
         const spend=( parseFloat(monthlySpend)||0 )+( parseFloat(dependentsAmt)||0 );
+        const idealSpend=Math.max(spend, (parseFloat(idealMonthlySpend)||0)+(parseFloat(dependentsAmt)||0));
 
         const[cpfLife,   setCpfLife]   =useState("");
         const[workInc,   setWorkInc]   =useState("");
@@ -777,6 +778,15 @@
                   </div>
                 )}
                 {hasSurplus&&<div style={{ fontSize:12.5,color:"#1a5530",marginTop:6 }}>Your retirement income comfortably covers your expenses.</div>}
+                {idealSpend>spend&&(
+                  <div style={{ marginTop:10,padding:"10px 12px",background:"#f0f8ff",borderRadius:8,border:"1px solid #b8d8f0" }}>
+                    <div style={{ fontSize:12,fontWeight:700,color:"#1a4e8c",marginBottom:4 }}>💭 Ideal lifestyle budget: {fmt(idealSpend)}/month</div>
+                    {totalIncome>=idealSpend
+                      ?<div style={{ fontSize:12,color:"#1a4e8c" }}>✓ Your income also covers your ideal budget. Great position!</div>
+                      :<div style={{ fontSize:12,color:"#1a4e8c" }}>Gap to ideal budget: <strong>−{fmt(idealSpend-totalIncome)}/month</strong>. Monetising your flat could help bridge this.</div>
+                    }
+                  </div>
+                )}
               </div>
             )}
 
@@ -1035,6 +1045,9 @@
       // ── Rightsizing calculator ────────────────────────────────────────────
       const RESALE_LEVY={ "2room":15000,"3room":30000,"4room":40000,"5room":45000,"exec":50000 };
 
+      const HDB_TOWNS=["ANG MO KIO","BEDOK","BISHAN","BUKIT BATOK","BUKIT MERAH","BUKIT PANJANG","BUKIT TIMAH","CENTRAL AREA","CHOA CHU KANG","CLEMENTI","GEYLANG","HOUGANG","JURONG EAST","JURONG WEST","KALLANG/WHAMPOA","MARINE PARADE","PASIR RIS","PUNGGOL","QUEENSTOWN","SEMBAWANG","SENGKANG","SERANGOON","TAMPINES","TOA PAYOH","WOODLANDS","YISHUN"];
+      const FLAT_API={"3room":"3 ROOM","4room":"4 ROOM","5room":"5 ROOM","exec":"EXECUTIVE","2room":"2 ROOM"};
+
       function Calculator({ userInputs, onContinue }){
         const[salePrice,    setSalePrice]   =useState("");
         const[cpfUsed,      setCpfUsed]     =useState("");
@@ -1043,6 +1056,36 @@
         const[isBTO,        setIsBTO]       =useState(userInputs.flatType==="bto");
         const[soldFlatType, setSoldFlatType]=useState("4room");
         const[renovCost,    setRenovCost]   =useState("");
+        const[town,         setTown]        =useState("");
+        const[fetching,     setFetching]    =useState(false);
+        const[fetchMsg,     setFetchMsg]    =useState("");
+
+        async function fetchEstimates(){
+          if(!town){ setFetchMsg("Please select a town first."); return; }
+          setFetching(true); setFetchMsg("");
+          const API="https://data.gov.sg/api/action/datastore_search?resource_id=d_8b84c4ee58e3cfc0ece0d773c8ca6abc&limit=500&sort=month%20desc&filters=";
+          const median=arr=>{ if(!arr.length)return null; const s=[...arr].sort((a,b)=>a-b); return s[Math.floor(s.length/2)]; };
+          try{
+            const sellType=FLAT_API[soldFlatType]||"4 ROOM";
+            const r1=await fetch(API+encodeURIComponent(JSON.stringify({flat_type:sellType,town}))).then(r=>r.json());
+            const sellMed=median(r1.result.records.map(r=>parseInt(r.resale_price)));
+            if(sellMed) setSalePrice(String(sellMed));
+
+            const sizes=userInputs.flatSizes||[];
+            const buyKey=sizes.includes("3room")?"3room":sizes.includes("2room")?"2room":null;
+            let buyMed=null;
+            if(!isBTO&&buyKey){
+              const r2=await fetch(API+encodeURIComponent(JSON.stringify({flat_type:FLAT_API[buyKey],town}))).then(r=>r.json());
+              buyMed=median(r2.result.records.map(r=>parseInt(r.resale_price)));
+              if(buyMed) setNewFlatPrice(String(buyMed));
+            }
+            const buyNote=isBTO?"buying BTO — no resale data":buyMed?`buying ${buyKey==="3room"?"3-room":"2-room"} ≈ ${fmt(buyMed)}`:"no buy data";
+            setFetchMsg(`📊 Median from data.gov.sg (${town}): selling ${sellType} ≈ ${sellMed?fmt(sellMed):"N/A"} · ${buyNote}. Based on recent transactions — adjust as needed.`);
+          }catch(e){
+            setFetchMsg("Could not load price data. Check your connection or enter manually.");
+          }
+          setFetching(false);
+        }
 
         const n=v=>parseFloat(v)||0;
         const sale=n(salePrice), cpf=n(cpfUsed), years=n(yearsOwned)||10, newFlat=n(newFlatPrice), renov=n(renovCost);
@@ -1093,6 +1136,28 @@
           <div>
             <div style={{ fontSize:17,fontWeight:700,color:"#1a1a1a",marginBottom:4 }}>Rightsizing Proceeds Estimator</div>
             <div style={{ fontSize:13,color:"#666",marginBottom:18,lineHeight:1.5 }}>Rough estimates only — confirm exact figures with HDB and your solicitor.</div>
+
+            {/* Market price lookup */}
+            <div style={{ marginBottom:18,padding:"12px 14px",background:"#f8fffe",border:`1px solid ${TEAL_MID}`,borderRadius:10 }}>
+              <div style={{ fontSize:12.5,fontWeight:700,color:TEAL,marginBottom:8 }}>💹 Get real market data (optional)</div>
+              <div style={{ display:"grid",gridTemplateColumns:"1fr auto",gap:10,alignItems:"flex-end" }}>
+                <div>
+                  <label style={{ display:"block",fontSize:12,fontWeight:600,color:"#444",marginBottom:4 }}>Your town / area</label>
+                  <select value={town} onChange={e=>setTown(e.target.value)}>
+                    <option value="">— select town —</option>
+                    {HDB_TOWNS.map(t=><option key={t} value={t}>{t.split(' ').map(w=>w.charAt(0)+w.slice(1).toLowerCase()).join(' ')}</option>)}
+                  </select>
+                </div>
+                <button onClick={fetchEstimates} disabled={fetching||!town}
+                  style={{ background:TEAL,color:"#fff",border:"none",borderRadius:10,padding:"10px 16px",
+                    fontSize:13,fontWeight:700,cursor:fetching||!town?"not-allowed":"pointer",opacity:fetching||!town?0.5:1,
+                    whiteSpace:"nowrap" }}>
+                  {fetching?"Loading…":"Fetch estimate →"}
+                </button>
+              </div>
+              {fetchMsg&&<div style={{ fontSize:11.5,color:"#555",marginTop:8,lineHeight:1.5 }}>{fetchMsg}</div>}
+              {!fetchMsg&&<div style={{ fontSize:11.5,color:"#aaa",marginTop:6 }}>Pulls median resale prices from data.gov.sg to pre-fill the fields below. You can always adjust.</div>}
+            </div>
 
             <div style={{ display:"grid",gap:14,marginBottom:18 }}>
               <div>{inputField("Estimated sale price of current flat (S$)",salePrice,setSalePrice,"e.g. 650000","Check recent prices on HDB's Resale Flat Prices portal")}</div>
@@ -1193,12 +1258,14 @@
         const[current,      setCurrent]     =useState("q_spend");
         const[userInputs,   setUserInputs]  =useState({});
         const[inputVal,     setInputVal]    =useState("");
+        const[idealVal,     setIdealVal]    =useState("");
+        const[showIdeal,    setShowIdeal]   =useState(false);
         const[multiSelected,setMultiSelected]=useState(new Set());
 
         function navigate(next, inputs={}){
           setHistory(h=>[...h,current]);
           if(Object.keys(inputs).length) setUserInputs(p=>({...p,...inputs}));
-          setInputVal("");
+          setInputVal(""); setIdealVal(""); setShowIdeal(false);
           setMultiSelected(new Set());
           setCurrent(next);
         }
@@ -1207,7 +1274,7 @@
           setCurrent(history[history.length-1]);
           setHistory(h=>h.slice(0,-1));
         }
-        function restart(){ setHistory([]); setCurrent("q_spend"); setUserInputs({}); setInputVal(""); }
+        function restart(){ setHistory([]); setCurrent("q_spend"); setUserInputs({}); setInputVal(""); setIdealVal(""); setShowIdeal(false); }
 
         const isResult  =current.startsWith("result_");
         const isTerminal=current in terminals;
@@ -1251,21 +1318,50 @@
             )}
 
             {/* Input */}
-            {node&&node.type==="input"&&(
-              <div style={card}>
-                <div style={{ fontSize:17,fontWeight:700,color:"#1a1a1a",marginBottom:8 }}>{node.text}</div>
-                {node.sub&&<div style={{ fontSize:13,color:"#555",marginBottom:14,lineHeight:1.6 }}>{node.sub}</div>}
-                <input type={node.inputType||"text"} value={inputVal} onChange={e=>setInputVal(e.target.value)}
-                  placeholder={node.placeholder} autoFocus
-                  onKeyDown={e=>e.key==="Enter"&&inputVal&&navigate(node.next,{[node.key]:inputVal})}
-                  style={{ marginBottom:14 }} />
-                <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                  <button onClick={()=>inputVal&&navigate(node.next,{[node.key]:inputVal})} disabled={!inputVal}
-                    style={{ ...btnY,opacity:inputVal?1:0.45 }}>Continue →</button>
-                  <button onClick={()=>navigate(node.next)} style={{ ...btnN,padding:"10px 0",fontSize:13 }}>Skip this question</button>
+            {node&&node.type==="input"&&(()=>{
+              const isSpend=node.key==="monthlySpend";
+              const extraInputs=isSpend&&idealVal?{idealMonthlySpend:idealVal}:{};
+              const doNav=()=>inputVal&&navigate(node.next,{[node.key]:inputVal,...extraInputs});
+              return(
+                <div style={card}>
+                  <div style={{ fontSize:17,fontWeight:700,color:"#1a1a1a",marginBottom:8 }}>{node.text}</div>
+                  {node.sub&&<div style={{ fontSize:13,color:"#555",marginBottom:14,lineHeight:1.6 }}>{node.sub}</div>}
+                  <input type={node.inputType||"text"} value={inputVal} onChange={e=>setInputVal(e.target.value)}
+                    placeholder={node.placeholder} autoFocus
+                    onKeyDown={e=>e.key==="Enter"&&doNav()}
+                    style={{ marginBottom:isSpend?10:14 }} />
+                  {isSpend&&(
+                    <div style={{ marginBottom:14 }}>
+                      <button onClick={()=>setShowIdeal(v=>!v)}
+                        style={{ background:"none",border:"none",cursor:"pointer",padding:"4px 0",
+                          fontSize:12.5,color:showIdeal?TEAL:"#999",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit" }}>
+                        <span style={{ fontSize:14 }}>{showIdeal?"▾":"💭"}</span>
+                        <span style={{ textDecoration:"underline dotted" }}>
+                          {showIdeal?"Hide ideal budget":"I'd like to plan for a higher lifestyle (optional)"}
+                        </span>
+                      </button>
+                      {showIdeal&&(
+                        <div style={{ marginTop:8,padding:"12px 14px",background:"#f8fffe",border:`1px solid ${TEAL_MID}`,borderRadius:10 }}>
+                          <label style={{ display:"block",fontSize:12.5,fontWeight:600,color:"#444",marginBottom:6 }}>
+                            Ideal monthly budget (S$)
+                          </label>
+                          <input type="number" value={idealVal} onChange={e=>setIdealVal(e.target.value)}
+                            placeholder={inputVal||"e.g. 3000"} style={{ marginBottom:6 }} />
+                          <div style={{ fontSize:11.5,color:"#888",lineHeight:1.5 }}>
+                            Your aspirational spend — e.g. more travel, dining out, or a larger buffer. We'll show how far your retirement income goes toward this goal too.
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+                    <button onClick={doNav} disabled={!inputVal}
+                      style={{ ...btnY,opacity:inputVal?1:0.45 }}>Continue →</button>
+                    <button onClick={()=>navigate(node.next)} style={{ ...btnN,padding:"10px 0",fontSize:13 }}>Skip this question</button>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Choice */}
             {node&&node.type==="choice"&&(
@@ -1344,6 +1440,7 @@
                 <RetirementCalculator
                   monthlySpend={userInputs.monthlySpend}
                   dependentsAmt={userInputs.dependentsAmt}
+                  idealMonthlySpend={userInputs.idealMonthlySpend}
                   onContinue={(surplus,gap)=>{
                     setHistory(h=>[...h,current]);
                     setUserInputs(p=>({...p,hasSurplus:surplus,monthlyGap:gap}));
