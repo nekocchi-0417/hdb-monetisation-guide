@@ -1091,10 +1091,12 @@
           setFetching(true); setFetchMsg("");
           const API="https://data.gov.sg/api/action/datastore_search?resource_id=d_8b84c4ee58e3cfc0ece0d773c8ca6abc&limit=100&sort=month%20desc&filters=";
           const leaseTarget=parseFloat(fetchLease)||0;
-          const filterByLease=(records)=>{
-            if(!leaseTarget) return records;
-            const nearby=records.filter(r=>Math.abs(parseInt(r.remaining_lease)-leaseTarget)<=10);
-            return nearby.length>=5?nearby:records;
+          const cutoffDate=(()=>{ const d=new Date(); d.setMonth(d.getMonth()-6); return d.toISOString().slice(0,7); })();
+          const filterRecords=(records)=>{
+            let r=records.filter(rec=>rec.month>=cutoffDate);
+            if(r.length<5) r=records; // fall back to all if too few recent
+            if(leaseTarget){ const nearby=r.filter(rec=>Math.abs(parseInt(rec.remaining_lease)-leaseTarget)<=10); if(nearby.length>=5) r=nearby; }
+            return r;
           };
           const median=arr=>{ if(!arr.length)return null; const s=[...arr].sort((a,b)=>a-b); return s[Math.floor(s.length/2)]; };
           const fetchWithRetry=async(url,retries=2)=>{
