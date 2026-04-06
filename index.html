@@ -1132,8 +1132,8 @@
             } else {
               buyNote=isBTO?"buying BTO — no resale price data":"";
             }
-            const leaseNote=leaseTarget?` (near ${leaseTarget} yr lease)`:"";
-            setFetchMsg(`📊 Median${leaseNote} · ${town}: selling ${sellType} ≈ ${sellMed?fmt(sellMed):"N/A"}${buyNote?" · "+buyNote:""}. Source: data.gov.sg`);
+            const leaseNote=leaseTarget?`, ~${leaseTarget} yr lease`:"";
+            setFetchMsg(`📊 Median (last 6 months${leaseNote}) · ${town}: selling ${sellType} ≈ ${sellMed?fmt(sellMed):"N/A"}${buyNote?" · "+buyNote:""}. Source: data.gov.sg`);
           }catch(e){
             setFetchMsg(`⚠️ ${e.message}. Enter prices manually if needed.`);
           }
