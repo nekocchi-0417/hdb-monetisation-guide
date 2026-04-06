@@ -1062,6 +1062,7 @@
         const[soldFlatType, setSoldFlatType]=useState("4room");
         const[renovCost,    setRenovCost]   =useState("");
         const[town,         setTown]        =useState("");
+        const[fetchLease,   setFetchLease]  =useState("");
         const[fetching,     setFetching]    =useState(false);
         const[fetchMsg,     setFetchMsg]    =useState("");
 
@@ -1069,25 +1070,41 @@
           if(!town){ setFetchMsg("Please select a town first."); return; }
           setFetching(true); setFetchMsg("");
           const API="https://data.gov.sg/api/action/datastore_search?resource_id=d_8b84c4ee58e3cfc0ece0d773c8ca6abc&limit=500&sort=month%20desc&filters=";
+          const leaseTarget=parseFloat(fetchLease)||0;
+          const filterByLease=(records)=>{
+            if(!leaseTarget) return records;
+            const nearby=records.filter(r=>Math.abs(parseInt(r.remaining_lease)-leaseTarget)<=10);
+            return nearby.length>=5?nearby:records; // fallback to all if too few matches
+          };
           const median=arr=>{ if(!arr.length)return null; const s=[...arr].sort((a,b)=>a-b); return s[Math.floor(s.length/2)]; };
           try{
             const sellType=FLAT_API[soldFlatType]||"4 ROOM";
-            const r1=await fetch(API+encodeURIComponent(JSON.stringify({flat_type:sellType,town}))).then(r=>r.json());
-            const sellMed=median(r1.result.records.map(r=>parseInt(r.resale_price)));
+            const resp1=await fetch(API+encodeURIComponent(JSON.stringify({flat_type:sellType,town})));
+            if(!resp1.ok) throw new Error(`HTTP ${resp1.status}`);
+            const d1=await resp1.json();
+            if(!d1.success) throw new Error(d1.error?.message||"API error");
+            const sellRecords=filterByLease(d1.result.records);
+            const sellMed=median(sellRecords.map(r=>parseInt(r.resale_price)));
             if(sellMed) setSalePrice(String(sellMed));
 
             const sizes=userInputs.flatSizes||[];
             const buyKey=sizes.includes("3room")?"3room":sizes.includes("2room")?"2room":null;
-            let buyMed=null;
+            let buyMed=null, buyNote="";
             if(!isBTO&&buyKey){
-              const r2=await fetch(API+encodeURIComponent(JSON.stringify({flat_type:FLAT_API[buyKey],town}))).then(r=>r.json());
-              buyMed=median(r2.result.records.map(r=>parseInt(r.resale_price)));
+              const resp2=await fetch(API+encodeURIComponent(JSON.stringify({flat_type:FLAT_API[buyKey],town})));
+              if(!resp2.ok) throw new Error(`HTTP ${resp2.status}`);
+              const d2=await resp2.json();
+              const buyRecords=filterByLease(d2.result.records);
+              buyMed=median(buyRecords.map(r=>parseInt(r.resale_price)));
               if(buyMed) setNewFlatPrice(String(buyMed));
+              buyNote=`buying ${buyKey==="3room"?"3-room":"2-room"} ≈ ${buyMed?fmt(buyMed):"N/A"}`;
+            } else {
+              buyNote=isBTO?"buying BTO — no resale price data available":"";
             }
-            const buyNote=isBTO?"buying BTO — no resale data":buyMed?`buying ${buyKey==="3room"?"3-room":"2-room"} ≈ ${fmt(buyMed)}`:"no buy data";
-            setFetchMsg(`📊 Median from data.gov.sg (${town}): selling ${sellType} ≈ ${sellMed?fmt(sellMed):"N/A"} · ${buyNote}. Based on recent transactions — adjust as needed.`);
+            const leaseNote=leaseTarget?` (filtered near ${leaseTarget} yr lease)`:"";
+            setFetchMsg(`📊 Median from data.gov.sg${leaseNote} · ${town}: selling ${sellType} ≈ ${sellMed?fmt(sellMed):"N/A"}${buyNote?" · "+buyNote:""}. Adjust as needed.`);
           }catch(e){
-            setFetchMsg("Could not load price data. Check your connection or enter manually.");
+            setFetchMsg(`⚠️ Could not load data: ${e.message}. Try again or enter prices manually.`);
           }
           setFetching(false);
         }
