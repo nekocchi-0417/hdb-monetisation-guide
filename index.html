@@ -671,7 +671,10 @@
         const sv=n(savingsAmt), yrs=Math.max(1,n(drawYears)||25);
         const fromSavings=sv>0?Math.round(sv/(yrs*12)):0;
         const totalIncome=regular+fromInvest+fromSavings;
-        const gap=spend-totalIncome;
+        const hasIdeal=idealSpend>spend;
+        const targetSpend=hasIdeal?idealSpend:spend;
+        const gap=targetSpend-totalIncome;
+        const currentGap=spend-totalIncome;
         const hasSurplus=gap<=0;
         const anyFilled=totalIncome>0||spend>0;
 
