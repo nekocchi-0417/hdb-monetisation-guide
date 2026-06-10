@@ -1,0 +1,22 @@
+{
+  "name": "hdb-monetisation-guide-v2",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Plan with your flat — HDB Housing Monetisation Guide V2 (retirement planning for Singapore seniors)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test src/logic/*.test.js"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "html-to-image": "^1.11.11"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.7"
+  }
+}
