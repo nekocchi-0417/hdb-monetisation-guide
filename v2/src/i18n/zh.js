@@ -1,0 +1,48 @@
+// 中文 (Simplified) — headline strings per spec §6.
+// TODO(before launch): native-speaker review of all strings.
+export default {
+  app: {
+    title: '用组屋规划退休',
+    masthead: '新加坡政府指南',
+    back: '返回',
+    continue: '继续',
+    skip: '不确定 — 跳过',
+    restart: '重新开始',
+    restartConfirm: '要从头开始吗？您的回答将被清除。',
+    changeAnswer: '修改回答',
+    textSize: '字体大小',
+    textSizeBase: '小',
+    textSizeLarge: '中',
+    textSizeXlarge: '大',
+    langName: '语言',
+    stubToast: '该语言即将推出 — 暂时显示英文。',
+    progressMore: '还有大约 {n} 个问题',
+    progressAlmost: '快完成了',
+  },
+
+  s0: {
+    eyebrow: '组屋退休规划',
+    title: '用组屋规划退休',
+    sub: '回答几个简单的问题，看看您的组屋如何增加每月的退休收入。',
+    modeHeading: '这是为谁规划的？',
+    modeSelf: '我为自己规划',
+    modeHelper: '我帮父母或亲人规划',
+    modeAdvisor: '我是顾问或义工，帮别人了解',
+    relationshipHeading: '您在帮谁规划？',
+    relMum: '我的母亲',
+    relDad: '我的父亲',
+    relOther: '其他人',
+    privacy: '无需登录。您的回答只保留在这部手机上 — 不会发送或储存。',
+    singpassOptional: '可选：用 Singpass 获取公积金余额和组屋资料，省去输入',
+    singpassDemo: '示范',
+    start: '开始',
+  },
+
+  s1: { title: '{mum}想要怎样的退休生活？' },
+  s2: { title: '每月的收入' },
+  s3: { title: '缺口' },
+  s4: { title: '关于这间组屋' },
+  s5: { title: '一些资格细节' },
+  s6: { title: '{mum_possessive}选项' },
+  s7: { title: '规划方案' },
+}
