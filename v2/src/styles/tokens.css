@@ -1,0 +1,105 @@
+/* ──────────────────────────────────────────────────────────────────────
+   Design tokens — SGDS-aligned, CPF green family.
+   PLACEHOLDER hex values matched by eye to the Singapore Government Design
+   System. TODO(before launch): replace with exact SGDS/CPF tokens from
+   https://designsystem.tech.gov.sg
+   ────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Palette (spec §10.1) */
+  --green-primary: #008736;
+  --green-dark: #005B25;
+  --green-deep: #0E3E2E;
+  --green-tint: #F2F9F4;
+  --ink: #1A1A1A;
+  --muted: #52564F;
+  --hint: #8A8A8A;
+  --line: #D5DDD8;
+  --paper: #FFFFFF;
+  --wash: #F7F9F7;
+  --amber-tint: #FFF7E8;
+  --amber-text: #6B4A0B;
+  --info-tint: #F3F7FC;
+  --info-text: #143A66;
+  --singpass-red: #D40F1F;
+
+  /* Radii / shadow */
+  --radius: 12px;
+  --radius-lg: 16px;
+  --shadow: 0 1px 3px rgba(14, 62, 46, 0.08), 0 4px 16px rgba(14, 62, 46, 0.06);
+
+  /* Senior-UX sizing (spec §10): base font 18px; A/A+/A++ scales the root.
+     font-scale is overridden on <html> by the text-size toggle. */
+  --font-scale: 1;
+  --font-base: calc(18px * var(--font-scale));
+  --tap-min: 44px;   /* minimum interactive target */
+  --card-min: 64px;  /* minimum option-card height */
+  --maxw: 640px;     /* single-column reading width */
+}
+
+/* Text-size toggle (A / A+ / A++) sets these on <html data-text-size> */
+html[data-text-size='base'] { --font-scale: 1; }
+html[data-text-size='large'] { --font-scale: 1.15; }
+html[data-text-size='xlarge'] { --font-scale: 1.30; }
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: var(--font-base);
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--wash);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Nothing below 14px (spec §10.1) — enforced via .fineprint floor */
+.fineprint { font-size: max(14px, calc(0.82 * var(--font-base))); color: var(--muted); }
+
+h1, h2, h3 { line-height: 1.25; margin: 0 0 0.4em; }
+
+button { font-family: inherit; font-size: inherit; cursor: pointer; }
+
+/* All interactive elements meet the tap-target floor */
+button, a[role='button'], .tap {
+  min-height: var(--tap-min);
+}
+
+input, select {
+  font-family: inherit;
+  font-size: var(--font-base);
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  outline: none;
+  min-height: var(--tap-min);
+}
+input:focus, select:focus { border-color: var(--green-primary); }
+
+/* Visible keyboard focus everywhere (spec §10: keyboard-focusable) */
+:focus-visible {
+  outline: 3px solid var(--green-primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+a { color: var(--green-dark); }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+/* Print: summary on one A4 page (spec §6 S7, §13) */
+@media print {
+  body { background: #fff; }
+  .no-print { display: none !important; }
+}
